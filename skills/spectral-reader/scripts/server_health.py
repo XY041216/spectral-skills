@@ -10,9 +10,22 @@ import sys
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
+def _find_runtime_root() -> Path:
+    here = Path(__file__).resolve()
+    candidates: list[Path] = []
+    for parent in here.parents:
+        candidates.append(parent)
+        candidates.append(parent / "spectral-core")
+    for candidate in candidates:
+        if (candidate / "spectral_core" / "__init__.py").is_file():
+            return candidate
+    return here.parents[3]
+
+
+ROOT = _find_runtime_root()
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+SKILL_DIR = Path(__file__).resolve().parents[1]
 
 from spectral_core.reader.response import ok_response
 from spectral_core.reader.version import CORE_VERSION, SCHEMA_VERSION
@@ -57,7 +70,7 @@ def _tool_availability() -> tuple[dict[str, bool], dict[str, bool]]:
     skill_scripts = {}
     fallback_scripts = {}
     for tool in REQUIRED_TOOLS:
-        skill_scripts[tool] = (ROOT / "skills" / "spectral-reader" / "scripts" / f"{tool}.py").exists()
+        skill_scripts[tool] = (SKILL_DIR / "scripts" / f"{tool}.py").exists()
         fallback_scripts[tool] = (ROOT / "scripts" / "reader" / f"{tool}.py").exists()
     return skill_scripts, fallback_scripts
 
@@ -72,8 +85,9 @@ def main(argv: list[str] | None = None) -> int:
         "spectral_data_contract.schema.json",
         "read_spectral_dataset_result.schema.json",
     ]
-    schemas_ok = all((ROOT / "skills" / "spectral-reader" / "schemas" / name).exists() for name in schema_files)
-    core_status = "healthy" if all(skill_scripts.values()) and all(fallback_scripts.values()) and schemas_ok else "degraded"
+    schema_dir = SKILL_DIR / "schemas"
+    schemas_ok = all((schema_dir / name).exists() for name in schema_files)
+    core_status = "healthy" if all(skill_scripts.values()) and schemas_ok else "degraded"
     response = ok_response(
         "server_health",
         {
@@ -84,8 +98,8 @@ def main(argv: list[str] | None = None) -> int:
             "check_consistency_available": skill_scripts["check_consistency"],
             "reader_core_available": True,
             "schemas_available": schemas_ok,
-            "data_contract_schema_available": (ROOT / "skills" / "spectral-reader" / "schemas" / "spectral_data_contract.schema.json").exists(),
-            "read_spectral_dataset_result_schema_available": (ROOT / "skills" / "spectral-reader" / "schemas" / "read_spectral_dataset_result.schema.json").exists(),
+            "data_contract_schema_available": (schema_dir / "spectral_data_contract.schema.json").exists(),
+            "read_spectral_dataset_result_schema_available": (schema_dir / "read_spectral_dataset_result.schema.json").exists(),
             "required_schemas_available": schemas_ok,
             "mcp_tools_declared": ["reader.server_health", "reader.read_spectral_dataset"],
             "primary_entrypoint": "read_spectral_dataset",

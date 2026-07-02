@@ -7,7 +7,19 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
+def _find_runtime_root() -> Path:
+    here = Path(__file__).resolve()
+    candidates: list[Path] = []
+    for parent in here.parents:
+        candidates.append(parent)
+        candidates.append(parent / "spectral-core")
+    for candidate in candidates:
+        if (candidate / "spectral_core" / "__init__.py").is_file():
+            return candidate
+    return here.parents[3]
+
+
+ROOT = _find_runtime_root()
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 

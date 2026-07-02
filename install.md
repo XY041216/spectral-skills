@@ -154,6 +154,35 @@ split 6:2:2, apply SNV preprocessing, use no feature reduction, and train a
 random_forest_classifier.
 ```
 
+## Direct GitHub Skill Installer
+
+The full plugin marketplace install above is preferred. If a Codex session uses
+the GitHub skill installer directly, do not install only the nine user-facing
+stage skills. Install the shared runtime skill as well:
+
+```bash
+python C:\Users\<USER>\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py \
+  --repo XY041216/spectral-skills \
+  --path skills/spectral-core \
+         skills/spectral-reader \
+         skills/spectral-qc \
+         skills/spectral-splitter \
+         skills/spectral-preprocess \
+         skills/spectral-feature \
+         skills/spectral-modeling \
+         skills/spectral-optimizer \
+         skills/spectral-report \
+         skills/spectral-workflow
+```
+
+`spectral-core` is not a user-facing analysis skill. It provides the
+`spectral_core` Python package needed by the other scripts when they are
+installed as separate GitHub skill folders under `~/.codex/skills`.
+
+If Codex first tries `--path .`, that is a repository/plugin bundle root rather
+than a single skill path. Use the plugin marketplace install, or use the explicit
+paths above.
+
 ## Claude-Compatible Local Install
 
 For Claude-compatible agents that understand Claude plugin metadata, install
@@ -190,7 +219,7 @@ skill image.
 Users can also verify the plugin from the plugin root:
 
 ```powershell
-cd E:\GPskill\skill8\spectral-skills-v2\plugins\spectral-skills
+cd E:\GPskill\skill8\spectral-skills\plugins\spectral-skills
 python skills\spectral-workflow\scripts\run_spectral_workflow.py --input path\to\data.csv --output-dir outputs\workflow_demo --task-goal classification --split-ratio 6:2:2 --preprocess-methods snv --feature-method none --models random_forest_classifier --json
 ```
 

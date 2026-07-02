@@ -47,6 +47,7 @@ def build_codex_plugin(*, clean: bool = False, verify: bool = False) -> dict[str
         if clean and PLUGIN_DIR.exists():
             shutil.rmtree(PLUGIN_DIR)
         _ensure_dirs()
+        copied.append(_copy_tree(ROOT / "spectral_core", ROOT / "skills" / "spectral-core" / "spectral_core"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-reader", PLUGIN_DIR / "skills" / "spectral-reader"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-qc", PLUGIN_DIR / "skills" / "spectral-qc"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-splitter", PLUGIN_DIR / "skills" / "spectral-splitter"))

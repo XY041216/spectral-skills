@@ -458,6 +458,30 @@ Codex Desktop 也可添加自定义插件市场：
 - Branch/ref：`main`
 - Plugin：`spectral-skills`
 
+如果使用 Codex 的 **GitHub skill installer** 直接从仓库导入子 skill，不要只安装
+`spectral-reader` 到 `spectral-workflow` 这 9 个分析入口；还必须同时安装
+`skills/spectral-core`。`spectral-core` 不是用户要主动调用的分析 skill，而是这些
+阶段脚本共享的 Python 运行时。缺少它时，独立安装的脚本会出现
+`ModuleNotFoundError: No module named 'spectral_core'`。
+
+推荐的直接 skill-installer 路径集合为：
+
+```text
+skills/spectral-core
+skills/spectral-reader
+skills/spectral-qc
+skills/spectral-splitter
+skills/spectral-preprocess
+skills/spectral-feature
+skills/spectral-modeling
+skills/spectral-optimizer
+skills/spectral-report
+skills/spectral-workflow
+```
+
+更推荐的方式仍是安装完整插件市场，因为它会一次性保留 `skills/`、`shared/`、
+`spectral_core/`、`scripts/` 和插件元数据。
+
 安装后开启新会话，例如：
 
 ```text
@@ -545,14 +569,16 @@ python plugins/spectral-skills/skills/spectral-workflow/scripts/run_spectral_wor
 .claude-plugin/                  Claude-compatible metadata
 install/                         plugin 构建与发布检查
 plugins/spectral-skills/         发布用插件镜像（由构建脚本生成）
-skills/                          九个 skill 的开发源文件
+skills/                          九个分析 skill + spectral-core 运行时 skill
 spectral_core/                   共享运行时实现
 scripts/                         统一 CLI/runtime 脚本
 README.md                        面向用户的完整能力说明
 install.md                       安装细节
 ```
 
-开发源位于 `skills/` 和 `spectral_core/`；`plugins/spectral-skills/` 是生成的发布镜像，不应手工编辑。
+开发源位于 `skills/` 和 `spectral_core/`；`skills/spectral-core/spectral_core/`
+是为直接 GitHub skill 导入准备的运行时镜像，由构建/检查脚本保持同步；
+`plugins/spectral-skills/` 是生成的发布镜像，不应手工编辑。
 
 ## 能力边界与科学解释
 

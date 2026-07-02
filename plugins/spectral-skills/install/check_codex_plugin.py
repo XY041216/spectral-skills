@@ -111,6 +111,7 @@ def check_codex_plugin() -> dict[str, Any]:
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-workflow" / "manifest.yaml", checked, mismatches)
     _check_manifest_method_scopes(checked, mismatches)
     _check_schema_mirrors(checked, mismatches)
+    _check_standalone_core_skill(checked, missing, mismatches)
     _check_source_mirrors(checked, mismatches)
     _check_no_excluded_artifacts(PLUGIN_DIR, checked, mismatches)
     _run_plugin_script(["skills/spectral-reader/scripts/server_health.py", "--json"], "plugin_server_health", checked, mismatches, warnings)
@@ -416,6 +417,37 @@ def _check_schema_mirrors(checked: list[dict[str, Any]], mismatches: list[dict[s
         )
     else:
         checked.append(_ok("shared_runtime_schema_mirrors", str(shared)))
+
+
+def _check_standalone_core_skill(
+    checked: list[dict[str, Any]],
+    missing: list[dict[str, Any]],
+    mismatches: list[dict[str, Any]],
+) -> None:
+    """Ensure direct GitHub skill installs can get the shared runtime."""
+
+    skill_dir = ROOT / "skills" / "spectral-core"
+    runtime_mirror = skill_dir / "spectral_core"
+    _require_file(skill_dir / "SKILL.md", checked, missing, "standalone_spectral_core_skill")
+    _require_file(runtime_mirror / "__init__.py", checked, missing, "standalone_spectral_core_runtime")
+    source_files = _release_file_map(ROOT / "spectral_core", {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"})
+    mirror_files = _release_file_map(runtime_mirror, {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"})
+    if source_files != mirror_files:
+        source_paths = set(source_files)
+        mirror_paths = set(mirror_files)
+        changed = sorted(path for path in source_paths & mirror_paths if source_files[path] != mirror_files[path])
+        mismatches.append(
+            _issue(
+                "STANDALONE_CORE_RUNTIME_MISMATCH",
+                "skills/spectral-core/spectral_core must mirror the root spectral_core runtime for direct GitHub skill installs.",
+                severity="error",
+                source_only=sorted(source_paths - mirror_paths)[:20],
+                mirror_only=sorted(mirror_paths - source_paths)[:20],
+                changed=changed[:20],
+            )
+        )
+    else:
+        checked.append(_ok("standalone_core_runtime_mirror", str(runtime_mirror)))
 
 
 def _release_file_map(root: Path, excluded_dirs: set[str]) -> dict[str, bytes]:
