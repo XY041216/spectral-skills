@@ -1,0 +1,91 @@
+name: spectral-workflow
+version: 0.1.0-beta.1
+description: Rule-based Agent routing for the minimal spectral skills chain.
+skill_type: workflow routing policy
+
+activation_boundary:
+  use_for:
+    - decide which spectral child skill to invoke next
+    - route spectral-reader to spectral-modeling
+    - route method recommendation and best-parameter requests to spectral-optimizer
+    - route publication figure and report requests to spectral-report
+    - continue from intermediate spectral standard packages
+    - maintain data_contract and split_contract handoffs
+    - ask for required workflow confirmations
+    - write workflow_result.json
+  not_for:
+    - parsing raw files directly
+    - quality control algorithms
+    - data-changing QC without confirmation
+    - split algorithm implementation
+    - spectral preprocessing algorithms
+    - feature engineering algorithms
+    - classification or regression algorithms
+    - reports logs debug audit systems
+    - executing AutoML optimizer searches inside workflow
+    - drawing or revising report figures inside workflow
+    - replacing child skills with one monolithic spectral skill
+  rule: Treat this skill as routing policy; child skills own stage algorithms and tools.
+
+always_load:
+  - static/core/route-index.md
+  - static/core/workflow-boundary.md
+  - static/core/contract-passing.md
+  - static/core/leakage-rules.md
+
+on_demand_fragments:
+  confirmation_gates: static/fragments/confirmation-gates.md
+  agent_tool_division: ../_shared/core/agent-tool-division.md
+  execution_backend_rules: ../_shared/core/execution-backend-rules.md
+
+references:
+  workflow_scenarios: references/workflow-scenarios.md
+
+schemas:
+  workflow_action_result: schemas/workflow_action_result.schema.json
+  spectral_data_contract: ../_shared/schemas/spectral_data_contract.schema.json
+  split_contract: ../_shared/schemas/split_contract.schema.json
+  model_contract: ../_shared/schemas/model_contract.schema.json
+
+scripts:
+  run_spectral_workflow: scripts/run_spectral_workflow.py
+
+scripts_fallback:
+  run_spectral_workflow: ../../scripts/workflow/run_spectral_workflow.py
+
+primary_entry:
+  current: run_spectral_workflow
+  rule: Fallback CLI/batch entry only. Prefer Agent routing to child skills during normal use.
+  default_output: workflow_result.json
+
+workflow_scope:
+  executable_stages:
+    - reader
+    - qc
+    - splitter
+    - preprocess
+    - feature
+    - modeling
+  routing_only_stages:
+    - optimization
+    - report
+  cli_supported_goals:
+    - read
+    - qc
+    - split
+    - prepare_for_optimizer
+    - compare_preprocess
+    - preprocess
+    - feature
+    - classification
+    - regression
+    - modeling
+  forbidden_outputs:
+    - _internal/
+    - logs/
+    - debug/
+    - audit/
+    - inventory/
+
+execution:
+  follows: ../_shared/core/execution-backend-rules.md

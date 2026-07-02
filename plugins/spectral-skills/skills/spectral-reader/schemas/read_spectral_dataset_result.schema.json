@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/spectral-reader/read_spectral_dataset_result.schema.json",
+  "title": "Read Spectral Dataset Result",
+  "type": "object",
+  "required": ["status"],
+  "properties": {
+    "status": { "type": "string", "enum": ["ready", "blocked", "needs_confirmation"] },
+    "output_dir": { "type": ["string", "null"] },
+    "X": { "type": ["string", "null"] },
+    "y": { "type": ["string", "null"] },
+    "sample_ids": { "type": ["string", "null"] },
+    "band_axis": { "type": ["string", "null"] },
+    "metadata": { "type": ["string", "null"] },
+    "data_contract": { "type": ["string", "null"] },
+    "n_samples": { "type": ["integer", "null"] },
+    "n_features": { "type": ["integer", "null"] },
+    "label_status": { "type": ["string", "null"] },
+    "task_hint": { "type": ["string", "null"] },
+    "band_unit": { "type": ["string", "null"] },
+    "source_type": { "type": ["string", "null"] },
+    "required_fields": { "type": "array" },
+    "suggested_arguments": { "type": "object", "additionalProperties": true },
+    "warnings": { "type": "array" },
+    "reason": { "type": "string" },
+    "blocking_reason": { "type": "string" }
+  },
+  "additionalProperties": true,
+  "patternProperties": {
+    "^(stage_results|artifact_refs|internal_refs|workflow_status|read_plan|preview|package_manifest_ref|summary_ref|confidence_scores)$": false
+  }
+}

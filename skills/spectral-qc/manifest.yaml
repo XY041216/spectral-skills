@@ -1,0 +1,174 @@
+name: spectral-qc
+version: 0.1.0-beta.1
+description: Pre-modeling spectral quality control on standard spectral data packages from spectral-reader.
+skill_type: quality control
+
+activation_boundary:
+  use_for:
+    - spectral quality control
+    - inspect reader output quality
+    - detect missing spectral values
+    - mark duplicate spectra candidates
+    - detect constant or low-variance bands
+    - detect intensity outliers
+    - detect noise outliers
+    - detect PCA score outliers
+    - detect target outliers
+    - check class imbalance
+    - confirmed imputation or deletion before downstream skills
+    - 光谱质量控制
+    - 光谱异常候选识别
+    - 建模前质量检查
+  not_for:
+    - reading raw spectral source files
+    - parsing CSV Excel NPZ MAT HDF5 source layouts
+    - external label alignment from raw files
+    - dataset splitting
+    - spectral preprocessing such as smoothing normalization baseline correction
+    - feature engineering
+    - modeling or optimization
+    - fixed report generation
+    - developing modifying testing packaging or reviewing the spectral-qc skill itself
+  rule: Treat changes to this skill as software development, not spectral QC.
+
+always_load:
+  - static/core/qc-boundary.md
+  - static/core/standard-package.md
+  - static/core/confirmation-gates.md
+  - ../_shared/core/agent-tool-division.md
+  - ../_shared/core/execution-backend-rules.md
+
+on_demand_fragments:
+  method_pool: static/fragments/method-pool.md
+  missing_values: static/fragments/missing-values.md
+  outlier_candidates: static/fragments/outlier-candidates.md
+  class_target_risks: static/fragments/class-target-risks.md
+  duplicate_spectra: static/fragments/duplicate-spectra.md
+  band_quality: static/fragments/band-quality.md
+
+references:
+  qc_scenarios: references/qc-scenarios.md
+  method_selection_cases: references/method-selection-cases.md
+  handoff_examples: references/handoff-examples.md
+
+schemas:
+  spectral_data_contract: ../_shared/schemas/spectral_data_contract.schema.json
+  qc_contract: ../_shared/schemas/qc_contract.schema.json
+  qc_action_result: schemas/qc_action_result.schema.json
+
+scripts:
+  qc_spectral_package: scripts/qc_spectral_package.py
+
+scripts_fallback:
+  qc_spectral_package: ../../scripts/qc/qc_spectral_package.py
+
+primary_entry:
+  current: qc_spectral_package
+  rule: Keep one unified user script entry; do not expose one script per algorithm.
+  default_input: data_contract.json plus standard CSV files
+  default_output: qc_result.json for observation-only QC, or qc_result.json plus cleaned_package and qc_cleaning_log.json after confirmed cleaning
+  downstream_package_rule: Use qc_result.next_package_for_downstream; it points to the input package for check/mark and to cleaned_package after confirmed clean.
+
+standard_package:
+  required_files:
+    - data_contract.json
+    - X.csv
+    - sample_ids.csv
+    - band_axis.csv
+  optional_files:
+    - y.csv
+    - metadata.csv
+  rewritten_output_files:
+    - data_contract.json
+    - X.csv
+    - sample_ids.csv
+    - band_axis.csv
+    - y.csv
+    - metadata.csv
+  forbidden_handoff_files:
+    - X_qc.csv
+    - package_manifest.json
+    - summary.json
+    - _internal/
+    - logs/
+    - audit/
+    - debug/
+
+qc_scope:
+  checks:
+    - missing_values
+    - constant_bands
+    - low_variance_bands
+    - duplicate_spectra_candidates
+    - intensity_outlier_candidates
+    - noise_outlier_candidates
+    - pca_score_outlier_candidates
+    - target_outlier_candidates
+    - class_distribution_risks
+    - abnormal_band_candidates
+  confirmed_actions:
+    - impute_missing_values
+    - remove_samples
+    - remove_bands
+    - remove_duplicate_spectra
+    - remove_near_duplicate_spectra
+    - repair_spikes_after_confirmation
+    - remove_target_outliers
+  not_in_scope:
+    - raw_file_reading
+    - source_layout_inference
+    - train_test_split
+    - smoothing
+    - baseline_correction
+    - normalization
+    - derivative_transform
+    - feature_selection
+    - model_training
+    - hyperparameter_optimization
+    - formal_report_generation
+
+method_pool:
+  sample_outliers:
+    - robust_zscore
+    - iqr
+    - mad
+    - similarity_to_mean
+    - classwise_similarity
+    - spike_detection
+    - baseline_drift_score
+    - PCA Hotelling T2
+    - Q residual
+    - mahalanobis_on_pca
+    - near_duplicate_check
+    - multi_method_consensus
+  later_sample_outliers:
+    - isolation_forest
+    - one_class_svm
+    - dbscan
+    - hdbscan
+    - lof
+  band_quality:
+    - constant band
+    - low variance band
+    - missing rate
+    - abnormal band profile
+  cleaning_strategies:
+    - remove_high_confidence_outliers
+    - remove_exact_duplicates_keep_first
+    - remove_near_duplicates_keep_representative
+    - emit_duplicate_groups_for_splitter
+    - drop_bands_by_missing_rate
+    - drop_bands_by_variance
+    - band_mean_imputation
+    - band_median_imputation
+    - linear_interpolation
+    - nearest_interpolation
+    - hampel_spike_repair
+  labels_targets:
+    - target IQR
+    - target MAD
+    - class count
+    - class imbalance ratio
+
+execution:
+  follows: ../_shared/core/execution-backend-rules.md

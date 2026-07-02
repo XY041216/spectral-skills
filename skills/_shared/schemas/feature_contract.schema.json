@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/shared/feature_contract.schema.json",
+  "title": "Feature Contract",
+  "type": "object",
+  "required": ["contract_type", "contract_id", "contract_status", "execution"],
+  "properties": {
+    "contract_type": { "type": "string", "const": "feature_contract" },
+    "contract_id": { "type": "string" },
+    "contract_status": { "$ref": "contract_status.schema.json" },
+    "feature_method": { "type": "string" },
+    "feature_mode": {
+      "type": "string",
+      "enum": ["unchanged", "projection", "original_band_subset", "interval_band_subset", "unknown"]
+    },
+    "requires_y": { "type": "boolean" },
+    "fit_policy": {
+      "type": "object",
+      "properties": {
+        "fit_scope": { "type": "string" },
+        "split_contract_required": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "params": { "type": "object" },
+    "iterations": { "type": "array" },
+    "execution": { "$ref": "execution_record.schema.json" }
+  },
+  "additionalProperties": true
+}

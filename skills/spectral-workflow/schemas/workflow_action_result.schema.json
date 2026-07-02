@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/spectral-workflow/workflow_action_result.schema.json",
+  "title": "Spectral Workflow Action Result",
+  "type": "object",
+  "required": ["workflow_status", "final_output"],
+  "properties": {
+    "workflow_status": { "type": "string", "enum": ["ready", "needs_confirmation", "blocked"] },
+    "task_goal": { "type": "string" },
+    "stage_outputs": { "type": "object", "additionalProperties": { "type": "string" } },
+    "final_output": { "type": "string" },
+    "workflow_result": { "type": "string" },
+    "handoff_ready": { "type": "boolean" },
+    "warnings": { "type": "array" }
+  },
+  "additionalProperties": true
+}

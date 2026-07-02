@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/spectral-modeling/modeling_action_result.schema.json",
+  "title": "Spectral Modeling Action Result",
+  "type": "object",
+  "required": ["status"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ready", "needs_confirmation", "blocked"]
+    },
+    "output_dir": { "type": "string" },
+    "modeling_contract": { "type": "string" },
+    "metrics": { "type": "string" },
+    "predictions": { "type": "string" },
+    "model_type": { "type": "string" },
+    "task_type": { "type": "string" },
+    "handoff_ready": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

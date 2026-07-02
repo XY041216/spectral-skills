@@ -1,0 +1,6 @@
+# exported by synthetic instrument
+# operator: test
+# table begins below
+remark,Unnamed: 0,No.,900 cm-1,1000 cm-1,1100 cm-1,Class
+ok,NIR_R_001,1,0.10,0.11,0.12,tablet_A
+low_signal,NIR_R_002,2,0.20,0.21,0.22,tablet_B

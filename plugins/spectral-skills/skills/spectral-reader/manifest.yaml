@@ -1,0 +1,167 @@
+name: spectral-reader
+version: 0.1.0-beta.1
+description: Runtime spectral dataset reader. Use read_spectral_dataset to convert user data files or folders into X.csv, optional y.csv, sample_ids.csv, band_axis.csv, optional metadata.csv, and data_contract.json.
+skill_type: data reader
+
+activation_boundary:
+  use_for:
+    - read spectral dataset
+    - load spectral data
+    - parse spectral matrix
+    - convert spectra to X y
+    - extract band_axis
+    - align external labels
+    - 读取光谱数据
+    - 解析光谱矩阵
+    - 生成 X.csv
+    - 生成 band_axis.csv
+    - 生成 data_contract.json
+    - 外部标签对齐
+  not_for:
+    - developing, modifying, refactoring, testing, packaging, installing, documenting, or reviewing the spectral-reader skill itself
+    - creating or editing reader skill files
+    - plugin construction or packaging work
+    - software engineering changes to the spectral-skills-v2 repository
+  rule: Treat changes to this skill as software development, not spectral data reading.
+
+always_load:
+  - static/core/workflow.md
+  - static/core/internal-read-settings.md
+  - static/core/confirmation-gates.md
+  - static/core/execution-boundary.md
+  - static/core/output-contract.md
+  - static/core/handoff-rules.md
+  - ../_shared/core/agent-tool-division.md
+  - ../_shared/core/execution-backend-rules.md
+
+on_demand_fragments:
+  csv_with_preamble: static/fragments/csv-with-preamble.md
+  metadata_before_spectra: static/fragments/metadata-before-spectra.md
+  wavenumber_columns: static/fragments/wavenumber-columns.md
+  wavelength_columns: static/fragments/wavelength-columns.md
+  samples_as_columns: static/fragments/samples-as-columns.md
+  external_label_file: static/fragments/external-label-file.md
+  sample_files_folder: static/fragments/sample-files-folder.md
+  excel_multi_sheet: static/fragments/excel-multi-sheet.md
+  mat_npz_variable_selection: static/fragments/mat-npz-variable-selection.md
+  hdf5_netcdf_dataset_path: static/fragments/hdf5-netcdf-dataset-path.md
+  complex_table_layout: static/fragments/complex-table-layout.md
+  numeric_band_columns: static/fragments/numeric-band-columns.md
+  folder_name_as_label: static/fragments/folder-name-as-label.md
+  excel_layout_cases: static/fragments/excel-layout-cases.md
+  chinese_column_names: static/fragments/chinese-column-names.md
+
+references:
+  reading_semantics_patterns: references/reading-semantics-patterns.md
+  csv_layout_cases: references/csv-layout-cases.md
+  column_role_cases: references/column-role-cases.md
+  band_axis_cases: references/band-axis-cases.md
+  external_label_cases: references/external-label-cases.md
+  sample_file_folder_cases: references/sample-file-folder-cases.md
+  excel_multi_sheet_cases: references/excel-multi-sheet-cases.md
+  mat_npz_variable_selection_cases: references/mat-npz-variable-selection-cases.md
+  hdf5_netcdf_dataset_path_cases: references/hdf5-netcdf-dataset-path-cases.md
+  complex_table_layout_cases: references/complex-table-layout-cases.md
+  data_contract_examples: references/data-contract-examples.md
+  failure_and_recovery_cases: references/failure-and-recovery-cases.md
+  confirmation_dialogue_cases: references/confirmation-dialogue-cases.md
+  instrument_export_cases: references/instrument-export-cases.md
+
+schemas:
+  spectral_data_contract: schemas/spectral_data_contract.schema.json
+  read_spectral_dataset_result: schemas/read_spectral_dataset_result.schema.json
+  shared_spectral_data_contract: ../_shared/schemas/spectral_data_contract.schema.json
+
+shared_resources:
+  development_root: ../_shared
+  plugin_root: ../../shared
+  note: In the Codex plugin image, shared resources are copied to plugin/shared and are not exposed as skills/_shared.
+
+scripts_fallback:
+  backend: script
+  note: The user-facing reader entrypoint is read_spectral_dataset; health and consistency scripts are release checks.
+  root_read_spectral_dataset: ../../scripts/reader/read_spectral_dataset.py
+  root_server_health: ../../scripts/reader/server_health.py
+  root_check_consistency: ../../scripts/reader/check_consistency.py
+  tools:
+    read_spectral_dataset: scripts/read_spectral_dataset.py
+    server_health: scripts/server_health.py
+    check_consistency: scripts/check_consistency.py
+
+mcp:
+  server: spectral-reader
+  tools:
+    - reader.server_health
+    - reader.read_spectral_dataset
+
+primary_tool:
+  name: read_spectral_dataset
+  role: user_reader_entrypoint
+  rule: writes only standard files and data_contract.json to the requested output directory.
+
+reader_entry:
+  current: input data -> determine/confirm read semantics -> read -> assert structure -> write standard output
+  primary_entrypoint: read_spectral_dataset
+  default_cli: python skills/spectral-reader/scripts/read_spectral_dataset.py --input <path> --output-dir <output>
+  rule: All user-facing reading capabilities must enter through read_spectral_dataset.
+  compatibility_note: Internal helper modules are implementation details, not skill tools or user workflow steps.
+
+standard_output:
+  files:
+    - X.csv
+    - y.csv
+    - sample_ids.csv
+    - band_axis.csv
+    - metadata.csv
+    - data_contract.json
+  optional_files:
+    - y.csv
+    - sample_ids.csv
+    - metadata.csv
+  forbidden_default_outputs:
+    - package_manifest.json
+    - summary.json
+    - _internal/
+    - preview_report.json
+    - read_plan.json
+    - profile_summary.json
+    - validation_report.json
+    - logs/
+    - decision_trace.json
+  data_contract_schema: schemas/spectral_data_contract.schema.json
+
+reader_current_scope:
+  supported:
+    - CSV/TSV/TXT matrix_file
+    - Excel/ODS workbook matrix_file
+    - NPY single 2D matrix
+    - NPZ variable map
+    - non-HDF5 MAT variable map
+    - HDF5 dataset path map
+    - NetCDF variable path map
+    - sample_orientation rows
+    - sample_orientation columns with samples_as_columns.enabled
+    - workbook spectral_sheet with optional label_sheet aligned by sample_id
+    - external label files aligned by sample_id
+    - sample_files_folder one_file_per_sample with CSV/TSV/TXT two-column spectra
+  unsupported:
+    - multi_sheet_auto_merge
+    - multiple_container_variable_auto_merge
+    - MAT_v7_3_HDF5
+    - hdf5_dataset_auto_merge
+    - netcdf_dimension_semantics_auto_inference
+    - json_table
+
+boundary:
+  does_not_do:
+    - qc
+    - split
+    - preprocess
+    - feature
+    - modeling
+    - optimizer
+    - debug_archive
+    - audit_package
+
+execution:
+  follows: ../_shared/core/execution-backend-rules.md

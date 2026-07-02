@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/spectral-feature/feature_action_result.schema.json",
+  "title": "Spectral Feature Action Result",
+  "type": "object",
+  "required": ["status"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ready", "needs_confirmation", "blocked"]
+    },
+    "output_dir": { "type": "string" },
+    "data_contract": { "type": "string" },
+    "feature_state": { "type": "string" },
+    "feature_contract": { "type": "string" },
+    "method": { "type": "string" },
+    "artifacts": { "type": "object" },
+    "confirmation_required": { "type": "array" },
+    "handoff_ready": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

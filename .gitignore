@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.pytest_tmp/
+.uv-cache/
+.venv/
+.venv_*/
+.env
+outputs/
+_tmp_pytest/
+_tmp_pytest_*/
+pytest-of-*/
+*.zip
+*.log
+.DS_Store

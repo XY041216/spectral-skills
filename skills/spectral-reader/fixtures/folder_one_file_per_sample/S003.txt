@@ -1,0 +1,4 @@
+wavelength	intensity
+900	0.30
+1000	0.31
+1100	0.32

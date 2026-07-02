@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/spectral-splitter/split_action_result.schema.json",
+  "title": "Spectral Split Action Result",
+  "type": "object",
+  "required": ["status"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ready", "needs_confirmation", "blocked"]
+    },
+    "output_dir": { "type": "string" },
+    "split_contract": { "type": "string" },
+    "split_indices": { "type": "string" },
+    "method": { "type": "string" },
+    "handoff_ready": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

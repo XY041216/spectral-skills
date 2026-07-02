@@ -1,0 +1,168 @@
+name: spectral-preprocess
+version: 0.1.0-beta.1
+description: Leakage-safe spectral preprocessing for split standard spectral data packages.
+skill_type: preprocessing
+
+activation_boundary:
+  use_for:
+    - preprocess standard spectral data packages
+    - leakage-safe preprocessing
+    - train-only fit preprocessing
+    - SNV
+    - MSC
+    - detrend
+    - baseline correction
+    - absorbance conversion
+    - band range preprocessing
+    - Savitzky-Golay smoothing
+    - first derivative
+    - second derivative
+    - mean centering
+    - standardization
+    - create preprocess_state.json
+    - prepare split data for spectral-feature or spectral-modeling
+  not_for:
+    - reading raw spectral source files
+    - parsing CSV Excel NPZ MAT HDF5 source layouts
+    - quality control
+    - missing value complex handling
+    - sample deletion
+    - dataset splitting
+    - feature selection
+    - PCA dimensionality reduction
+    - CARS SPA VIP UVE
+    - model training
+    - hyperparameter optimization
+    - preprocessing search by model performance
+    - report generation
+    - logs debug audit systems
+  rule: Treat changes to this skill as software development, not spectral preprocessing.
+
+always_load:
+  - static/core/preprocess-boundary.md
+  - static/core/leakage-rules.md
+  - static/core/output-contract.md
+  - ../_shared/core/agent-tool-division.md
+  - ../_shared/core/execution-backend-rules.md
+
+on_demand_fragments:
+  method_selection: static/fragments/method-selection.md
+  safety_checks: static/fragments/safety-checks.md
+
+references:
+  preprocess_scenarios: references/preprocess-scenarios.md
+
+schemas:
+  spectral_data_contract: ../_shared/schemas/spectral_data_contract.schema.json
+  split_contract: ../_shared/schemas/split_contract.schema.json
+  preprocess_contract: ../_shared/schemas/preprocess_contract.schema.json
+  preprocess_action_result: schemas/preprocess_action_result.schema.json
+
+scripts:
+  preprocess_spectral_package: scripts/preprocess_spectral_package.py
+
+scripts_fallback:
+  preprocess_spectral_package: ../../scripts/preprocess/preprocess_spectral_package.py
+
+primary_entry:
+  current: preprocess_spectral_package
+  rule: Keep one unified script entry; do not expose one script per preprocessing method.
+  default_input: data_contract.json plus standard CSV files and split_contract.json
+  default_output: standard spectral package plus preprocess_state.json
+
+standard_package:
+  required_files:
+    - data_contract.json
+    - X.csv
+    - sample_ids.csv
+    - band_axis.csv
+  required_split_file:
+    - split_contract.json
+  optional_files:
+    - y.csv
+    - metadata.csv
+  rewritten_output_files:
+    - X.csv
+    - sample_ids.csv
+    - band_axis.csv
+    - data_contract.json
+    - y.csv
+    - metadata.csv
+    - preprocess_state.json
+  forbidden_outputs:
+    - X_preprocessed.csv
+    - train_X.csv
+    - test_X.csv
+    - val_X.csv
+    - logs/
+    - audit/
+    - debug/
+    - reports/
+
+preprocess_scope:
+  methods:
+    - none
+    - snv
+    - msc
+    - detrend
+    - snv_detrend
+    - sg_smoothing
+    - first_derivative
+    - second_derivative
+    - moving_average
+    - gaussian_smoothing
+    - median_filter
+    - linear_baseline
+    - polynomial_baseline
+    - rubberband_baseline
+    - als_baseline
+    - mean_centering
+    - standardization
+    - minmax_scaling
+    - robust_scaling
+    - pareto_scaling
+    - l2_normalization
+    - area_normalization
+    - max_abs_normalization
+    - reflectance_to_absorbance
+    - transmittance_to_absorbance
+    - log_transform
+    - band_range_select
+    - remove_band_ranges
+  train_fit_methods:
+    - msc
+    - mean_centering
+    - standardization
+    - minmax_scaling
+    - robust_scaling
+    - pareto_scaling
+  needs_parameter_confirmation:
+    - sg_smoothing
+    - first_derivative
+    - second_derivative
+    - linear_baseline
+    - polynomial_baseline
+    - rubberband_baseline
+    - als_baseline
+    - reflectance_to_absorbance
+    - transmittance_to_absorbance
+    - band_range_select
+    - remove_band_ranges
+  later_extensions:
+    - OSC
+    - EMSC
+    - wavelet denoising
+    - airPLS baseline
+    - arPLS baseline
+    - continuum removal
+    - resample_band_axis
+    - automated preprocessing search
+    - model-linked preprocessing selection
+    - PCA
+    - SPA
+    - CARS
+    - VIP
+    - UVE
+
+execution:
+  follows: ../_shared/core/execution-backend-rules.md

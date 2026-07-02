@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/spectral-reader/spectral_data_contract.schema.json",
+  "title": "Minimal Spectral Reader Data Contract",
+  "type": "object",
+  "required": [
+    "status",
+    "files",
+    "shape",
+    "X",
+    "sample_ids",
+    "band_axis",
+    "n_samples",
+    "n_features",
+    "sample_orientation",
+    "label_status",
+    "task_hint",
+    "source_type"
+  ],
+  "properties": {
+    "status": { "type": "string", "enum": ["ready", "blocked", "provisional"] },
+    "reader_version": { "type": "string" },
+    "source": {
+      "type": "object",
+      "properties": {
+        "input": { "type": ["string", "null"] },
+        "spectral_sheet": { "type": ["string", "null"] },
+        "label_sheet": { "type": ["string", "null"] },
+        "X_variable": { "type": ["string", "null"] },
+        "y_variable": { "type": ["string", "null"] },
+        "sample_ids_variable": { "type": ["string", "null"] },
+        "band_axis_variable": { "type": ["string", "null"] },
+        "metadata_variable": { "type": ["string", "null"] },
+        "X_path": { "type": ["string", "null"] },
+        "y_path": { "type": ["string", "null"] },
+        "sample_ids_path": { "type": ["string", "null"] },
+        "band_axis_path": { "type": ["string", "null"] },
+        "metadata_path": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "object",
+      "required": ["X", "sample_ids", "band_axis"],
+      "properties": {
+        "X": { "type": "string", "const": "X.csv" },
+        "y": { "type": ["string", "null"] },
+        "sample_ids": { "type": "string", "const": "sample_ids.csv" },
+        "band_axis": { "type": "string", "const": "band_axis.csv" },
+        "metadata": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "shape": {
+      "type": "object",
+      "required": ["n_samples", "n_features"],
+      "properties": {
+        "n_samples": { "type": "integer", "minimum": 0 },
+        "n_features": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "X": { "type": "string", "const": "X.csv" },
+    "y": { "type": ["string", "null"] },
+    "sample_ids": { "type": ["string", "null"] },
+    "band_axis_ref": { "type": "string", "const": "band_axis.csv" },
+    "band_axis": {
+      "type": "object",
+      "required": ["file", "type", "count"],
+      "properties": {
+        "file": { "type": "string", "const": "band_axis.csv" },
+        "unit": { "type": ["string", "null"] },
+        "type": { "type": "string" },
+        "count": { "type": "integer", "minimum": 0 },
+        "source": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "metadata": { "type": ["string", "null"] },
+    "n_samples": { "type": "integer", "minimum": 0 },
+    "n_features": { "type": "integer", "minimum": 0 },
+    "sample_orientation": { "type": ["string", "null"] },
+    "label_status": { "type": "string", "enum": ["absent", "present", "present_with_missing", "available", "none"] },
+    "metadata_status": { "type": ["string", "null"], "enum": ["absent", "present", "present_with_missing", "available", "none", null] },
+    "missing_value_status": { "type": "string", "enum": ["none", "present", "unknown"] },
+    "sample_id_status": { "type": "string", "enum": ["original", "generated", "partially_generated_after_confirmation", "unknown"] },
+    "task_hint": { "type": "string" },
+    "band_unit": { "type": ["string", "null"] },
+    "spectral_type": { "type": ["string", "null"] },
+    "source_type": { "type": "string" },
+    "table_layout": {
+      "type": "object",
+      "properties": {
+        "header_type": { "type": "string" },
+        "spectral_region": {
+          "type": "object",
+          "properties": {
+            "start": { "type": ["string", "integer", "null"] },
+            "end": { "type": ["string", "integer", "null"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "target_columns": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array" }
+  },
+  "additionalProperties": false
+}

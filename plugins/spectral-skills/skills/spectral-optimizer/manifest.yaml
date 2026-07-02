@@ -1,0 +1,77 @@
+name: spectral-optimizer
+version: 0.1.0-beta.1
+description: Leakage-safe recommendation, tuning, step comparison, and budgeted pipeline optimization planning for spectral workflows.
+skill_type: optimization
+
+activation_boundary:
+  use_for:
+    - recommend candidate methods from spectral data profile
+    - tune one method parameter space
+    - compare one workflow step such as feature or modeling
+    - plan budgeted full pipeline optimization
+    - select best pipeline from validation or CV trial results
+    - write optimizer_contract.json candidate_space.json trial_manifest.csv trial_results.csv best_pipeline.json
+  not_for:
+    - reading raw spectral source files
+    - quality control
+    - sample deletion
+    - dataset splitting
+    - spectral preprocessing execution
+    - feature extraction execution
+    - model training execution
+    - using test metrics for method or parameter selection
+    - unbounded AutoML searches
+    - report generation
+  rule: Optimizer plans and selects; child skills execute algorithms.
+
+always_load:
+  - static/core/optimizer-boundary.md
+  - static/core/leakage-rules.md
+  - static/core/output-contract.md
+  - ../_shared/core/skill-boundary-principles.md
+  - ../_shared/core/reproducibility-rules.md
+
+on_demand_fragments:
+  mode_selection: static/fragments/mode-selection.md
+  search_spaces: static/fragments/search-spaces.md
+
+references:
+  optimizer_scenarios: references/optimizer-scenarios.md
+
+schemas:
+  optimization_contract: ../_shared/schemas/optimization_contract.schema.json
+  optimizer_action_result: schemas/optimizer_action_result.schema.json
+
+scripts:
+  optimize_spectral_pipeline: scripts/optimize_spectral_pipeline.py
+
+scripts_fallback:
+  optimize_spectral_pipeline: ../../scripts/optimizer/optimize_spectral_pipeline.py
+
+primary_entry:
+  current: optimize_spectral_pipeline
+  rule: Keep one unified optimizer entry; do not expose one script per search mode.
+  default_output: optimizer_contract.json optimization_plan.json candidate_space.json trial_manifest.csv trial_results.csv best_pipeline.json recommendation_report.md
+
+modes:
+  - recommend_from_profile
+  - tune_method
+  - compare_step
+  - optimize_pipeline
+
+safety:
+  test_used_for_selection: false
+  final_test_evaluated_once: true
+  budget_required_for_pipeline_search: true
+  tie_breaker_policy:
+    - validation_or_cv_metric_first
+    - simpler_preprocess_chain
+    - fewer_output_features
+    - fewer_tuned_parameters
+    - unsupervised_feature_before_supervised_when_tied
+    - lower_compute_model_before_experimental_when_tied
+  small_holdout_followup: repeated_holdout_n_repeats_5_or_10
+
+execution:
+  child_execution: spectral-workflow
+  optimizer_execution: plan_and_select

@@ -1,0 +1,233 @@
+name: spectral-feature
+version: 0.1.0-beta.1
+description: Leakage-safe feature engineering and dimensionality reduction for split standard spectral data packages.
+skill_type: feature engineering
+
+activation_boundary:
+  use_for:
+    - feature engineering on standard spectral data packages
+    - leakage-safe dimensionality reduction
+    - train-only PCA fit
+    - train-only Kernel PCA Sparse PCA NMF ICA Dictionary Learning and LDA projection
+    - deterministic DCT and FFT spectral transforms
+    - discovery embeddings for spectral-report such as UMAP t-SNE Isomap and LLE
+    - confirmed deep and self-supervised spectral embeddings
+    - train-only PLS latent variable extraction and VIP scoring
+    - univariate ANOVA and regression feature scoring
+    - interval PLS SPA CARS UVE and MCUVE variable selection
+    - variance threshold feature selection
+    - select bands by wavelength or wavenumber range
+    - select bands by index or feature name
+    - create feature_state.json
+    - prepare split data for spectral-modeling
+  not_for:
+    - reading raw spectral source files
+    - parsing CSV Excel NPZ MAT HDF5 source layouts
+    - quality control
+    - sample deletion
+    - dataset splitting
+    - spectral preprocessing such as SNV MSC SG smoothing derivatives
+    - classification or regression model training
+    - model evaluation
+    - hyperparameter optimization
+    - feature search by model performance
+    - report generation
+    - logs debug audit systems
+    - treating t-SNE UMAP or other discovery embeddings as performance evidence
+    - deep embedding training without explicit confirmation and training parameters
+  rule: Treat changes to this skill as software development, not feature engineering.
+
+always_load:
+  - static/core/feature-boundary.md
+  - static/core/leakage-rules.md
+  - static/core/output-contract.md
+  - ../_shared/core/agent-tool-division.md
+  - ../_shared/core/execution-backend-rules.md
+
+on_demand_fragments:
+  method_selection: static/fragments/method-selection.md
+  safety_checks: static/fragments/safety-checks.md
+
+references:
+  feature_scenarios: references/feature-scenarios.md
+
+schemas:
+  spectral_data_contract: ../_shared/schemas/spectral_data_contract.schema.json
+  split_contract: ../_shared/schemas/split_contract.schema.json
+  feature_contract: ../_shared/schemas/feature_contract.schema.json
+  feature_action_result: schemas/feature_action_result.schema.json
+
+scripts:
+  feature_spectral_package: scripts/feature_spectral_package.py
+
+scripts_fallback:
+  feature_spectral_package: ../../scripts/feature/feature_spectral_package.py
+
+primary_entry:
+  current: feature_spectral_package
+  rule: Keep one unified script entry; do not expose one script per feature method.
+  default_input: data_contract.json plus standard CSV files and split_contract.json
+  default_output: standard spectral package plus feature_state.json
+
+standard_package:
+  required_files:
+    - data_contract.json
+    - X.csv
+    - sample_ids.csv
+    - band_axis.csv
+  required_split_file:
+    - split_contract.json
+  optional_files:
+    - y.csv
+    - metadata.csv
+  rewritten_output_files:
+    - X.csv
+    - sample_ids.csv
+    - band_axis.csv
+    - data_contract.json
+    - y.csv
+    - metadata.csv
+    - feature_state.json
+  forbidden_outputs:
+    - X_features.csv
+    - train_X.csv
+    - test_X.csv
+    - val_X.csv
+    - reports/
+    - logs/
+    - audit/
+    - debug/
+
+feature_scope:
+  methods:
+    - none
+    - pca
+    - kernel_pca
+    - sparse_pca
+    - nmf
+    - ica_embedding
+    - lda_projection
+    - dct_features
+    - fft_features
+    - dictionary_learning
+    - umap_embedding
+    - isomap_embedding
+    - lle_embedding
+    - tsne_embedding
+    - autoencoder_embedding
+    - denoising_autoencoder_embedding
+    - cnn_1d_embedding
+    - cls_former_embedding
+    - resnet1d_embedding
+    - masked_spectral_autoencoder_embedding
+    - contrastive_spectral_embedding
+    - variance_threshold
+    - select_by_band_range
+    - select_by_band_indices
+    - pls_latent_variables
+    - vip
+    - correlation_filter
+    - select_k_best
+    - anova_f
+    - f_regression
+    - interval_pls
+    - spa
+    - cars
+    - uve
+    - mcuve
+  train_fit_methods:
+    - pca
+    - kernel_pca
+    - sparse_pca
+    - nmf
+    - ica_embedding
+    - lda_projection
+    - dictionary_learning
+    - umap_embedding
+    - isomap_embedding
+    - lle_embedding
+    - autoencoder_embedding
+    - denoising_autoencoder_embedding
+    - cnn_1d_embedding
+    - cls_former_embedding
+    - resnet1d_embedding
+    - masked_spectral_autoencoder_embedding
+    - contrastive_spectral_embedding
+    - variance_threshold
+    - pls_latent_variables
+    - vip
+    - correlation_filter
+    - select_k_best
+    - anova_f
+    - f_regression
+    - interval_pls
+    - spa
+    - cars
+    - uve
+    - mcuve
+  deterministic_per_sample_methods:
+    - dct_features
+    - fft_features
+  visualization_only_methods:
+    - tsne_embedding
+  modeling_confirmation_required:
+    - umap_embedding
+    - isomap_embedding
+    - lle_embedding
+  convergence_audited_methods:
+    - sparse_pca
+    - nmf
+    - ica_embedding
+    - dictionary_learning
+  training_audited_methods:
+    - autoencoder_embedding
+    - denoising_autoencoder_embedding
+    - cnn_1d_embedding
+    - cls_former_embedding
+    - resnet1d_embedding
+    - masked_spectral_autoencoder_embedding
+    - contrastive_spectral_embedding
+  deep_training_confirmation_required:
+    - autoencoder_embedding
+    - denoising_autoencoder_embedding
+    - cnn_1d_embedding
+    - cls_former_embedding
+    - resnet1d_embedding
+    - masked_spectral_autoencoder_embedding
+    - contrastive_spectral_embedding
+  needs_parameter_confirmation:
+    - autoencoder_embedding
+    - denoising_autoencoder_embedding
+    - cnn_1d_embedding
+    - cls_former_embedding
+    - resnet1d_embedding
+    - masked_spectral_autoencoder_embedding
+    - contrastive_spectral_embedding
+    - pls_latent_variables
+    - vip
+    - correlation_filter
+    - select_k_best
+    - anova_f
+    - f_regression
+    - interval_pls
+    - spa
+    - cars
+    - uve
+    - mcuve
+    - select_by_band_range
+    - select_by_band_indices
+  aliases:
+    spectral_transformer_embedding: cls_former_embedding
+  later_extensions:
+    - mutual information
+    - LASSO
+    - ElasticNet
+    - OPLS
+    - OSC
+    - wavelet features
+    - attention pooling
+    - generic self-supervised spectral embeddings
+    - automated feature search
+
+execution:
+  follows: ../_shared/core/execution-backend-rules.md

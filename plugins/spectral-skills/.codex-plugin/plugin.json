@@ -1,0 +1,6 @@
+{
+  "name": "spectral-skills",
+  "version": "0.1.0-beta.1",
+  "description": "Agent-oriented spectral data skills for leakage-safe spectral reading, QC, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing.",
+  "skills": "./skills"
+}

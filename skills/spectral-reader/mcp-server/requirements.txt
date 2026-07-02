@@ -1,0 +1,7 @@
+mcp
+fastmcp
+pandas
+numpy
+jsonschema
+pyyaml
+

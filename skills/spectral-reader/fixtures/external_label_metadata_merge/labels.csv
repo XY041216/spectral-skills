@@ -1,0 +1,4 @@
+sample_id,Class,batch,operator
+S001,A,B1,op-a
+S002,B,B1,op-b
+S003,A,B2,op-c

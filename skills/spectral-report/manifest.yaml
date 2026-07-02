@@ -1,0 +1,58 @@
+name: spectral-report
+version: 0.1.0-beta.1
+description: Publication-grade, contract-aware spectral figures and reproducible figure packages.
+skill_type: reporting
+
+activation_boundary:
+  use_for:
+    - publication figures from spectral workflow outputs
+    - spectral and preprocessing plots
+    - feature importance selected-band and latent-variable figures
+    - classification regression and optimizer result figures
+    - figure audit redraw captions source data and QA
+  not_for:
+    - reading raw vendor files
+    - quality control decisions or sample removal
+    - splitting preprocessing feature fitting modeling or optimization
+    - selecting methods from test metrics
+    - inventing units repetition uncertainty or significance
+  rule: Report existing evidence; do not create or alter analytical results.
+
+always_load:
+  - static/core/boundary.md
+  - static/core/figure-contract.md
+  - static/core/integrity-rules.md
+  - static/core/typography-export.md
+  - static/core/qa-loop.md
+  - references/input-artifact-map.md
+
+on_demand_fragments:
+  spectra_preprocess: static/fragments/spectra-preprocess.md
+  feature_interpretation: static/fragments/feature-interpretation.md
+  classification: static/fragments/classification.md
+  regression: static/fragments/regression.md
+  optimizer: static/fragments/optimizer.md
+  revise_existing_figure: static/fragments/revise-existing-figure.md
+
+references:
+  style_index: references/style-reference-index.md
+  chart_decisions: references/chart-decision-matrix.md
+  axis_units: references/axis-and-unit-rules.md
+  visual_system: references/visual-system.md
+  statistics: references/statistical-reporting.md
+  layouts: references/layout-recipes.md
+  captions: references/caption-rules.md
+  qa: references/qa-checklist.md
+  scenarios: references/scenario-tests.md
+
+primary_entry:
+  current: knowledge_flow
+  backend: python
+  outputs: report_contract.json figures source_data code captions qa
+
+safety:
+  test_used_for_selection: false
+  no_invented_statistics: true
+  no_model_training: true
+  final_size_render_review: required
+

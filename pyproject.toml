@@ -1,0 +1,9 @@
+[project]
+name = "spectral-skills"
+version = "0.1.0b1"
+description = "Agent-oriented spectral data processing skills."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["skills"]
+pythonpath = ["."]

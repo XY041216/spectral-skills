@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/optimizer_action_result.schema.json",
+  "title": "Spectral Optimizer Action Result",
+  "type": "object",
+  "required": ["status"],
+  "properties": {
+    "status": { "type": "string", "enum": ["ready", "needs_confirmation", "blocked"] },
+    "mode": { "type": "string" },
+    "selection_metric": { "type": "string" },
+    "test_used_for_selection": { "type": "boolean" },
+    "optimizer_contract": { "type": "string" },
+    "candidate_space": { "type": "string" },
+    "trial_manifest": { "type": "string" },
+    "best_pipeline": { "type": "string" }
+  },
+  "additionalProperties": true
+}

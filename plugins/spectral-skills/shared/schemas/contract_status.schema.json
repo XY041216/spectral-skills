@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/shared/contract_status.schema.json",
+  "title": "Spectral Skills Contract Status",
+  "type": "string",
+  "enum": ["confirmed", "provisional", "blocked"],
+  "oneOf": [
+    {
+      "const": "confirmed",
+      "description": "Required evidence and confirmations are sufficient for permitted downstream skills."
+    },
+    {
+      "const": "provisional",
+      "description": "Key confirmations remain unresolved; limited downstream use may continue only with those gates preserved."
+    },
+    {
+      "const": "blocked",
+      "description": "Necessary information is missing or a blocking risk prevents unsafe downstream execution."
+    }
+  ]
+}

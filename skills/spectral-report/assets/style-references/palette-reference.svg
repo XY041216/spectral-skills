@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <rect width="1200" height="720" fill="#FFFFFF"/>
+  <style>
+    .title { font: 700 32px 'Times New Roman', serif; fill: #222222; }
+    .label { font: 22px 'Times New Roman', serif; fill: #222222; }
+    .hex { font: 18px 'Times New Roman', serif; fill: #555555; }
+  </style>
+  <text x="50" y="58" class="title">Spectral-report publication palette</text>
+  <text x="50" y="102" class="label">Low-saturation manuscript family</text>
+  <g transform="translate(50,125)">
+    <rect x="0" y="0" width="170" height="90" rx="8" fill="#5B9AE9"/><text x="0" y="122" class="label">Control blue</text><text x="0" y="148" class="hex">#5B9AE9</text>
+    <rect x="210" y="0" width="170" height="90" rx="8" fill="#97B3D8"/><text x="210" y="122" class="label">Blue soft</text><text x="210" y="148" class="hex">#97B3D8</text>
+    <rect x="420" y="0" width="170" height="90" rx="8" fill="#E5B58E"/><text x="420" y="122" class="label">Treatment peach</text><text x="420" y="148" class="hex">#E5B58E</text>
+    <rect x="630" y="0" width="170" height="90" rx="8" fill="#E8D1BA"/><text x="630" y="122" class="label">Peach soft</text><text x="630" y="148" class="hex">#E8D1BA</text>
+    <rect x="840" y="0" width="170" height="90" rx="8" fill="#DBB4C6"/><text x="840" y="122" class="label">Support pink</text><text x="840" y="148" class="hex">#DBB4C6</text>
+  </g>
+  <text x="50" y="342" class="label">High-discrimination model and class family</text>
+  <g transform="translate(50,365)">
+    <rect x="0" y="0" width="115" height="80" rx="8" fill="#2454E6"/><text x="0" y="112" class="label">Blue</text><text x="0" y="138" class="hex">#2454E6</text>
+    <rect x="140" y="0" width="115" height="80" rx="8" fill="#FF7A00"/><text x="140" y="112" class="label">Orange</text><text x="140" y="138" class="hex">#FF7A00</text>
+    <rect x="280" y="0" width="115" height="80" rx="8" fill="#137F22"/><text x="280" y="112" class="label">Green</text><text x="280" y="138" class="hex">#137F22</text>
+    <rect x="420" y="0" width="115" height="80" rx="8" fill="#A514C6"/><text x="420" y="112" class="label">Purple</text><text x="420" y="138" class="hex">#A514C6</text>
+    <rect x="560" y="0" width="115" height="80" rx="8" fill="#A8780A"/><text x="560" y="112" class="label">Ochre</text><text x="560" y="138" class="hex">#A8780A</text>
+    <rect x="700" y="0" width="115" height="80" rx="8" fill="#13A8D3"/><text x="700" y="112" class="label">Cyan</text><text x="700" y="138" class="hex">#13A8D3</text>
+    <rect x="840" y="0" width="115" height="80" rx="8" fill="#D85B8A"/><text x="840" y="112" class="label">Rose</text><text x="840" y="138" class="hex">#D85B8A</text>
+    <rect x="980" y="0" width="115" height="80" rx="8" fill="#789A3D"/><text x="980" y="112" class="label">Olive</text><text x="980" y="138" class="hex">#789A3D</text>
+  </g>
+  <line x1="50" y1="585" x2="1150" y2="585" stroke="#D9D9D9" stroke-width="2"/>
+  <text x="50" y="630" class="label">Use no more than five strong colors in one main panel.</text>
+  <text x="50" y="668" class="label">Preserve identity with markers, line styles, hatches, or direct labels.</text>
+</svg>

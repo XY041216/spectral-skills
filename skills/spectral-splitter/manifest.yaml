@@ -1,0 +1,133 @@
+name: spectral-splitter
+version: 0.1.0-beta.1
+description: Reproducible train validation test splitting for standard spectral data packages.
+skill_type: data splitting
+
+activation_boundary:
+  use_for:
+    - split standard spectral data packages
+    - train test split
+    - train validation test split
+    - random split with seed
+    - classification stratified split
+    - predefined split
+    - kfold cross validation
+    - stratified kfold
+    - leave one out cross validation
+    - monte carlo cross validation
+    - Kennard-Stone split
+    - SPXY split
+    - group-aware split
+    - regression binned stratification
+    - create split_contract.json
+    - split reader output
+    - split qc output
+  not_for:
+    - reading raw spectral source files
+    - parsing CSV Excel NPZ MAT HDF5 source layouts
+    - quality control
+    - missing value imputation
+    - abnormal sample removal
+    - spectral preprocessing
+    - feature engineering
+    - model training
+    - optimization
+    - report generation
+    - time-series split
+    - chronological split
+    - nested cross validation
+  rule: Treat changes to this skill as software development, not data splitting.
+
+always_load:
+  - static/core/split-boundary.md
+  - static/core/standard-package.md
+  - static/core/output-contract.md
+  - ../_shared/core/agent-tool-division.md
+  - ../_shared/core/execution-backend-rules.md
+
+on_demand_fragments:
+  method_selection: static/fragments/method-selection.md
+  safety_checks: static/fragments/safety-checks.md
+
+references:
+  split_scenarios: references/split-scenarios.md
+
+schemas:
+  spectral_data_contract: ../_shared/schemas/spectral_data_contract.schema.json
+  split_contract: ../_shared/schemas/split_contract.schema.json
+
+scripts:
+  split_spectral_package: scripts/split_spectral_package.py
+
+scripts_fallback:
+  split_spectral_package: ../../scripts/splitter/split_spectral_package.py
+
+primary_entry:
+  current: split_spectral_package
+  rule: Keep one unified script entry; do not expose one script per split algorithm.
+  default_input: data_contract.json plus standard CSV files
+  default_output: split_indices.csv and split_contract.json
+
+standard_package:
+  required_files:
+    - data_contract.json
+    - X.csv
+    - sample_ids.csv
+    - band_axis.csv
+  optional_files:
+    - y.csv
+    - metadata.csv
+  not_rewritten:
+    - X.csv
+    - sample_ids.csv
+    - band_axis.csv
+    - y.csv
+    - metadata.csv
+  output_files:
+    - split_indices.csv
+    - split_contract.json
+    - split_summary.json
+  forbidden_outputs:
+    - train_X.csv
+    - test_X.csv
+    - val_X.csv
+    - X_train.csv
+    - copied_standard_package/
+    - logs/
+    - audit/
+    - debug/
+
+split_scope:
+  methods:
+    - random
+    - stratified
+    - predefined_split
+    - kfold
+    - stratified_kfold
+    - leave_one_out
+    - monte_carlo_cv
+    - repeated_random_split
+    - stratified_monte_carlo_cv
+    - kennard_stone
+    - spxy
+    - duplex
+    - regression_stratified
+    - y_binned_stratified
+    - group
+    - group_aware
+    - stratified_group
+  confirmed_or_blocked_when:
+    - ratio_missing
+    - classification_auto_stratified_needs_confirmation
+    - class_count_too_small
+    - representative_split_requested
+    - y_used_for_splitting
+    - group_column_used
+    - cv_or_repeated_split_requested
+  later_extensions:
+    - time-series split
+    - nested CV
+    - chronological split
+
+execution:
+  follows: ../_shared/core/execution-backend-rules.md

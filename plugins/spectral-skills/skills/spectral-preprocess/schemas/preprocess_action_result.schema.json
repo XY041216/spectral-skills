@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/spectral-preprocess/preprocess_action_result.schema.json",
+  "title": "Spectral Preprocess Action Result",
+  "type": "object",
+  "required": ["status"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ready", "needs_confirmation", "blocked"]
+    },
+    "output_dir": { "type": "string" },
+    "data_contract": { "type": "string" },
+    "preprocess_state": { "type": "string" },
+    "methods": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "handoff_ready": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

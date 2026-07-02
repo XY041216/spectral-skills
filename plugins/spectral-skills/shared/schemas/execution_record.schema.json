@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/shared/execution_record.schema.json",
+  "title": "Spectral Skills Execution Record",
+  "type": "object",
+  "properties": {
+    "backend": {
+      "type": "string",
+      "enum": ["mcp", "script", "agent_guided", "manual_confirmed", "unknown"]
+    },
+    "server_name": { "type": ["string", "null"] },
+    "tool_chain": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "fallback_used": { "type": "boolean" },
+    "fallback_reason": { "type": ["string", "null"] },
+    "core_version": { "type": "string" },
+    "schema_version": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "python_executable": { "type": ["string", "null"] },
+    "working_directory": { "type": ["string", "null"] },
+    "plugin_root": { "type": ["string", "null"] },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    }
+  },
+  "required": ["backend", "tool_chain", "fallback_used", "core_version", "schema_version", "timestamp"],
+  "additionalProperties": true
+}

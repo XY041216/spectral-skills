@@ -1,0 +1,147 @@
+name: spectral-modeling
+version: 0.1.0-beta.1
+description: Leakage-safe classification and regression modeling for split standard spectral data packages.
+skill_type: modeling
+
+activation_boundary:
+  use_for:
+    - train classification models from standard spectral packages
+    - train regression models from standard spectral packages
+    - compare candidate models on validation split
+    - tune model hyperparameters on validation split or train-only CV
+    - evaluate final model on test split
+    - write modeling_contract.json modeling_summary.json metrics.json predictions.csv
+    - prepare modeling results for spectral-report or spectral-optimizer
+  not_for:
+    - reading raw spectral source files
+    - parsing CSV Excel NPZ MAT HDF5 source layouts
+    - quality control
+    - sample deletion
+    - dataset splitting
+    - spectral preprocessing such as SNV MSC SG smoothing derivatives
+    - feature selection or dimensionality reduction
+    - PCA CARS SPA UVE VIP
+    - tuning preprocessing or feature engineering by test score
+    - using test split for model selection
+    - AutoML end-to-end optimizer searches
+    - report generation
+    - logs debug audit systems
+  rule: Treat changes to this skill as software development, not modeling execution.
+
+always_load:
+  - static/core/modeling-boundary.md
+  - static/core/leakage-rules.md
+  - static/core/output-contract.md
+  - ../_shared/core/agent-tool-division.md
+  - ../_shared/core/execution-backend-rules.md
+
+on_demand_fragments:
+  model_selection: static/fragments/model-selection.md
+  safety_checks: static/fragments/safety-checks.md
+
+references:
+  modeling_scenarios: references/modeling-scenarios.md
+
+schemas:
+  spectral_data_contract: ../_shared/schemas/spectral_data_contract.schema.json
+  split_contract: ../_shared/schemas/split_contract.schema.json
+  model_contract: ../_shared/schemas/model_contract.schema.json
+  modeling_action_result: schemas/modeling_action_result.schema.json
+
+scripts:
+  model_spectral_package: scripts/model_spectral_package.py
+
+scripts_fallback:
+  model_spectral_package: ../../scripts/modeling/model_spectral_package.py
+
+primary_entry:
+  current: model_spectral_package
+  rule: Keep one unified script entry; do not expose one script per model.
+  default_input: data_contract.json plus standard CSV files, y.csv, and split_contract.json
+  default_output: modeling_contract.json modeling_summary.json metrics.json predictions.csv optional model artifact
+
+standard_package:
+  required_files:
+    - data_contract.json
+    - X.csv
+    - sample_ids.csv
+    - band_axis.csv
+    - y.csv
+  required_split_file:
+    - split_contract.json
+  optional_files:
+    - metadata.csv
+  output_files:
+    - modeling_contract.json
+    - modeling_summary.json
+    - metrics.json
+    - predictions.csv
+    - model_artifact.pkl
+    - confusion_matrix.csv
+    - prediction_std.csv
+    - uncertainty_summary.json
+  forbidden_outputs:
+    - X_model.csv
+    - train_X.csv
+    - test_X.csv
+    - val_X.csv
+    - reports/
+    - logs/
+    - audit/
+    - debug/
+
+model_scope:
+  classification_models:
+    - logistic_regression
+    - linear_svm
+    - svm
+    - lda
+    - qda
+    - gaussian_nb
+    - pls_da
+    - simca
+    - random_forest_classifier
+    - extra_trees_classifier
+    - gradient_boosting_classifier
+    - knn_classifier
+    - mlp_classifier
+  regression_models:
+    - plsr
+    - pcr
+    - linear_regression
+    - ridge
+    - lasso
+    - elastic_net
+    - bayesian_ridge
+    - svr
+    - knn_regressor
+    - random_forest_regressor
+    - extra_trees_regressor
+    - gradient_boosting_regressor
+    - gpr
+  optional_dependency_models:
+    - xgboost_classifier
+    - xgboost_regressor
+    - lightgbm_classifier
+    - lightgbm_regressor
+    - catboost_classifier
+    - catboost_regressor
+  experimental_small_sample_models:
+    - spectral_dkl_gp_classifier
+    - spectral_dkl_gp_regressor
+    - proto_spectral_classifier
+    - proto_spectral_regressor
+    - cls_former_classifier
+    - cls_former_regressor
+    - cls_former_embedding_svm
+  selection:
+    default: validation_split
+    fallback: train_cv_when_no_validation
+    test_used_for_selection: false
+  gates:
+    optional_dependencies: block_when_missing
+    experimental_parameters: needs_confirmation_unless_auto_confirmed
+    automl: out_of_scope
+
+execution:
+  follows: ../_shared/core/execution-backend-rules.md

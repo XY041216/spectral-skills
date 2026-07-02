@@ -1,0 +1,4 @@
+sample_info,sample_info,spectra,spectra,spectra,label
+sample_id,batch,900,1000,1100,Class
+S001,B1,0.12,0.13,0.14,A
+S002,B1,0.15,0.16,0.17,B

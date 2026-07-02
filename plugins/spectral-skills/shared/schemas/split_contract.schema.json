@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/shared/split_contract.schema.json",
+  "title": "Split Contract",
+  "type": "object",
+  "required": ["contract_type", "contract_id", "input_data_contract_id", "contract_status", "execution"],
+  "properties": {
+    "contract_type": { "type": "string", "const": "split_contract" },
+    "contract_id": { "type": "string" },
+    "input_data_contract_id": { "type": "string" },
+    "contract_status": { "$ref": "contract_status.schema.json" },
+    "execution": { "$ref": "execution_record.schema.json" }
+  },
+  "additionalProperties": true
+}

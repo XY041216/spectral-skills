@@ -1,0 +1,28 @@
+{
+  "name": "spectral-skills",
+  "version": "0.1.0-beta.1",
+  "description": "Claude-compatible spectral data processing skills for leakage-safe analysis workflows.",
+  "owner": {
+    "name": "Spectral Skills Contributors"
+  },
+  "plugins": [
+    {
+      "name": "spectral-skills",
+      "version": "0.1.0-beta.1",
+      "source": "./",
+      "description": "Agent-oriented spectral data skills for leakage-safe spectral reading, QC, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing.",
+      "author": {
+        "name": "Spectral Skills Contributors"
+      },
+      "keywords": [
+        "spectral",
+        "chemometrics",
+        "classification",
+        "regression",
+        "workflow",
+        "publication-figures"
+      ],
+      "category": "research"
+    }
+  ]
+}

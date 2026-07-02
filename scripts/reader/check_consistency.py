@@ -1,0 +1,27 @@
+"""Global fallback CLI for spectral-reader consistency checks."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from spectral_core.reader.consistency import check_consistency
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Check spectral-reader scripts, MCP, manifest, schema, and docs consistency.")
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args(argv)
+    response = check_consistency(repo_root=ROOT, backend="script")
+    sys.stdout.write(json.dumps(response, ensure_ascii=True, separators=(",", ":")) + "\n")
+    return 0 if response.get("ok") else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
