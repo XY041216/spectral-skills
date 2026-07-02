@@ -78,6 +78,20 @@ The repository-level `.agents/plugins/marketplace.json` points Codex to
 contains Claude-compatible plugin and marketplace metadata that reuse the same
 skill image.
 
+## Codex Config Preflight
+
+If Codex reports that it cannot load `config.toml` after importing or enabling
+the plugin, the failing file is the user-level Codex configuration, not the
+Spectral Skills runtime. Validate it before retrying plugin import:
+
+```bash
+python install/check_codex_config.py --json
+```
+
+An `unclosed table, expected ]` error usually means an older `[projects.'...']`
+entry in `~/.codex/config.toml` was truncated or contains a malformed path.
+Fix or remove the malformed table, then rerun the preflight and reopen Codex.
+
 ## Scope
 
 The plugin supports standard spectral reading and QC, holdout/CV/repeated and

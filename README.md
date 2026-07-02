@@ -447,6 +447,18 @@ qa/*.md
 
 ### Codex 插件市场
 
+Before importing or enabling the plugin, validate the user-level Codex config:
+
+```bash
+python install/check_codex_config.py --json
+```
+
+If Codex reports `Could not load config.toml` or `unclosed table, expected ]`,
+the failing file is `~/.codex/config.toml`, not the Spectral Skills runtime.
+Plugin import makes Codex reload global config, so an old malformed
+`[projects.'...']` entry can surface at that moment. Fix or remove the malformed
+table, rerun the preflight, and then retry plugin import.
+
 ```bash
 codex plugin marketplace add https://github.com/XY041216/spectral-skills.git --ref main
 codex plugin add spectral-skills@spectral-skills-local-marketplace

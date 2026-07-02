@@ -68,6 +68,25 @@ let `check_codex_plugin.py` verify the generated `plugin.json` version.
 
 Codex users should install the repository as a plugin marketplace:
 
+Before importing or enabling the plugin, validate the user-level Codex config:
+
+```bash
+python install/check_codex_config.py --json
+```
+
+If Codex reports an error such as:
+
+```text
+Could not load config.toml ... unclosed table, expected ]
+```
+
+the failing file is `~/.codex/config.toml` or `%USERPROFILE%\.codex\config.toml`.
+It is not a Spectral Skills runtime error. Importing or enabling a plugin makes
+Codex reload its global configuration, so a historical malformed entry can
+surface at that moment. The most common cause is an old `[projects.'...']`
+table whose path was truncated or lost the closing quote and `]`. Fix or remove
+the malformed table, rerun the preflight, and only then retry plugin import.
+
 ```bash
 codex plugin marketplace add https://github.com/XY041216/spectral-skills.git --ref main
 codex plugin add spectral-skills@spectral-skills-local-marketplace

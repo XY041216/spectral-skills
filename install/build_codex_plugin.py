@@ -100,7 +100,13 @@ def build_codex_plugin(*, clean: bool = False, verify: bool = False) -> dict[str
         copied.append(_copy_tree(ROOT / "scripts" / "modeling", PLUGIN_DIR / "scripts" / "modeling"))
         copied.append(_copy_tree(ROOT / "scripts" / "optimizer", PLUGIN_DIR / "scripts" / "optimizer"))
         copied.append(_copy_tree(ROOT / "scripts" / "workflow", PLUGIN_DIR / "scripts" / "workflow"))
-        copied.append(_copy_tree(ROOT / "install", PLUGIN_DIR / "install", include_names={"build_codex_plugin.py", "check_codex_plugin.py"}))
+        copied.append(
+            _copy_tree(
+                ROOT / "install",
+                PLUGIN_DIR / "install",
+                include_names={"build_codex_plugin.py", "check_codex_plugin.py", "check_codex_config.py"},
+            )
+        )
         written.extend(_write_plugin_files())
         written.append(str(_write_marketplace()))
         written.extend(str(path) for path in _write_claude_plugin_files())
@@ -321,6 +327,20 @@ The repository-level `.agents/plugins/marketplace.json` points Codex to
 `./plugins/spectral-skills`. The repository-level `.claude-plugin/` directory
 contains Claude-compatible plugin and marketplace metadata that reuse the same
 skill image.
+
+## Codex Config Preflight
+
+If Codex reports that it cannot load `config.toml` after importing or enabling
+the plugin, the failing file is the user-level Codex configuration, not the
+Spectral Skills runtime. Validate it before retrying plugin import:
+
+```bash
+python install/check_codex_config.py --json
+```
+
+An `unclosed table, expected ]` error usually means an older `[projects.'...']`
+entry in `~/.codex/config.toml` was truncated or contains a malformed path.
+Fix or remove the malformed table, then rerun the preflight and reopen Codex.
 
 ## Scope
 

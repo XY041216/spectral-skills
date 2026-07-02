@@ -87,6 +87,7 @@ def check_codex_plugin() -> dict[str, Any]:
     _require_dir(PLUGIN_DIR / "scripts" / "modeling", checked, missing, "plugin_modeling_fallback_scripts")
     _require_dir(PLUGIN_DIR / "scripts" / "optimizer", checked, missing, "plugin_optimizer_fallback_scripts")
     _require_dir(PLUGIN_DIR / "scripts" / "workflow", checked, missing, "plugin_workflow_fallback_scripts")
+    _require_file(PLUGIN_DIR / "install" / "check_codex_config.py", checked, missing, "plugin_codex_config_preflight")
     _require_file(PLUGIN_DIR / "README.md", checked, missing, "plugin_readme")
     _require_file(PLUGIN_DIR / "requirements.txt", checked, missing, "plugin_requirements")
 
@@ -119,6 +120,7 @@ def check_codex_plugin() -> dict[str, Any]:
     _check_standalone_core_skill(checked, missing, mismatches)
     _check_source_mirrors(checked, mismatches)
     _check_no_excluded_artifacts(PLUGIN_DIR, checked, mismatches)
+    _run_codex_config_preflight_selftest(checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-reader/scripts/server_health.py", "--json"], "plugin_server_health", checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-reader/scripts/check_consistency.py", "--json"], "plugin_skill_consistency", checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-qc/scripts/qc_spectral_package.py", "--mode", "methods", "--json"], "plugin_qc_methods", checked, mismatches, warnings)
@@ -553,6 +555,62 @@ def _run_plugin_script(args: list[str], key: str, checked: list[dict[str, Any]],
             checked.append(_ok(key, " ".join(args)))
     except Exception as exc:
         mismatches.append(_issue("PLUGIN_SCRIPT_EXCEPTION", "Plugin script could not run.", severity="error", key=key, error=str(exc)))
+
+
+def _run_codex_config_preflight_selftest(
+    checked: list[dict[str, Any]],
+    mismatches: list[dict[str, Any]],
+    warnings: list[dict[str, Any]],
+) -> None:
+    test_dir = PLUGIN_DIR / "assets" / "_check_codex_config"
+    valid_config = test_dir / "valid.toml"
+    invalid_config = test_dir / "invalid.toml"
+    script = PLUGIN_DIR / "install" / "check_codex_config.py"
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    try:
+        test_dir.mkdir(parents=True, exist_ok=True)
+        valid_config.write_text(
+            "[marketplaces.spectral-skills-local-marketplace]\n"
+            "source_type = \"local\"\n"
+            "source = 'C:\\\\path\\\\to\\\\spectral-skills'\n",
+            encoding="utf-8",
+        )
+        invalid_config.write_text(
+            "[projects.'C:\\\\bad\\\\truncated]\n"
+            "trust_level = \"trusted\"\n",
+            encoding="utf-8",
+        )
+        valid = subprocess.run(
+            [sys.executable, str(script), "--config", str(valid_config), "--json"],
+            cwd=PLUGIN_DIR,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=env,
+        )
+        invalid = subprocess.run(
+            [sys.executable, str(script), "--config", str(invalid_config), "--json"],
+            cwd=PLUGIN_DIR,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=env,
+        )
+        valid_payload = json.loads(valid.stdout)
+        invalid_payload = json.loads(invalid.stdout)
+        invalid_codes = {item.get("code") for item in invalid_payload.get("errors", [])}
+        if valid.returncode != 0 or not valid_payload.get("ok"):
+            mismatches.append(_issue("CODEX_CONFIG_PREFLIGHT_VALID_FAILED", "Codex config preflight rejected valid TOML.", severity="error", stdout=valid.stdout, stderr=valid.stderr))
+        elif invalid.returncode == 0 or invalid_payload.get("ok") or "CODEX_CONFIG_TOML_INVALID" not in invalid_codes:
+            mismatches.append(_issue("CODEX_CONFIG_PREFLIGHT_INVALID_FAILED", "Codex config preflight did not detect malformed TOML.", severity="error", stdout=invalid.stdout, stderr=invalid.stderr))
+        else:
+            checked.append(_ok("codex_config_preflight_selftest", str(script)))
+    except Exception as exc:
+        mismatches.append(_issue("CODEX_CONFIG_PREFLIGHT_EXCEPTION", "Codex config preflight self-test could not run.", severity="error", error=str(exc)))
+    finally:
+        if test_dir.exists():
+            shutil.rmtree(test_dir)
 
 
 def _remove_empty_dir(path: Path) -> None:
