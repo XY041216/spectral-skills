@@ -464,6 +464,24 @@ codex plugin marketplace add https://github.com/XY041216/spectral-skills.git --r
 codex plugin add spectral-skills@spectral-skills-local-marketplace
 ```
 
+If the Codex CLI cannot run on Windows, or if the marketplace/plugin entries
+exist in `config.toml` but no `spectral-skills` folder appears under
+`%USERPROFILE%\.codex\plugins\cache`, run the local installer from the clone
+root:
+
+```bash
+python install/install_codex_plugin.py --json
+```
+
+It validates `config.toml`, writes a backup before changing it, enables the
+local marketplace, and materializes the release image into Codex's plugin cache:
+
+```text
+%USERPROFILE%\.codex\plugins\cache\spectral-skills-local-marketplace\spectral-skills\<version>\
+```
+
+Restart Codex in a new thread after the installer reports success.
+
 Codex Desktop 也可添加自定义插件市场：
 
 - Marketplace source：`https://github.com/XY041216/spectral-skills.git`

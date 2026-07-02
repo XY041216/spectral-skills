@@ -104,7 +104,12 @@ def build_codex_plugin(*, clean: bool = False, verify: bool = False) -> dict[str
             _copy_tree(
                 ROOT / "install",
                 PLUGIN_DIR / "install",
-                include_names={"build_codex_plugin.py", "check_codex_plugin.py", "check_codex_config.py"},
+                include_names={
+                    "build_codex_plugin.py",
+                    "check_codex_plugin.py",
+                    "check_codex_config.py",
+                    "install_codex_plugin.py",
+                },
             )
         )
         written.extend(_write_plugin_files())
@@ -341,6 +346,22 @@ python install/check_codex_config.py --json
 An `unclosed table, expected ]` error usually means an older `[projects.'...']`
 entry in `~/.codex/config.toml` was truncated or contains a malformed path.
 Fix or remove the malformed table, then rerun the preflight and reopen Codex.
+
+## Codex Desktop Cache Install
+
+If Codex Desktop cannot execute the Codex CLI or the plugin appears in
+`config.toml` but not under `~/.codex/plugins/cache`, run the repository
+installer from the clone root:
+
+```bash
+python install/install_codex_plugin.py --json
+```
+
+The installer validates `config.toml`, writes a backup before changing it, adds
+the local marketplace/plugin enablement entries, and materializes the built
+plugin image at
+`~/.codex/plugins/cache/spectral-skills-local-marketplace/spectral-skills/<version>/`.
+Restart Codex in a new thread after it reports success.
 
 ## Scope
 

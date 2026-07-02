@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -88,6 +89,7 @@ def check_codex_plugin() -> dict[str, Any]:
     _require_dir(PLUGIN_DIR / "scripts" / "optimizer", checked, missing, "plugin_optimizer_fallback_scripts")
     _require_dir(PLUGIN_DIR / "scripts" / "workflow", checked, missing, "plugin_workflow_fallback_scripts")
     _require_file(PLUGIN_DIR / "install" / "check_codex_config.py", checked, missing, "plugin_codex_config_preflight")
+    _require_file(PLUGIN_DIR / "install" / "install_codex_plugin.py", checked, missing, "plugin_codex_desktop_installer")
     _require_file(PLUGIN_DIR / "README.md", checked, missing, "plugin_readme")
     _require_file(PLUGIN_DIR / "requirements.txt", checked, missing, "plugin_requirements")
 
@@ -121,6 +123,7 @@ def check_codex_plugin() -> dict[str, Any]:
     _check_source_mirrors(checked, mismatches)
     _check_no_excluded_artifacts(PLUGIN_DIR, checked, mismatches)
     _run_codex_config_preflight_selftest(checked, mismatches, warnings)
+    _run_codex_desktop_install_selftest(checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-reader/scripts/server_health.py", "--json"], "plugin_server_health", checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-reader/scripts/check_consistency.py", "--json"], "plugin_skill_consistency", checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-qc/scripts/qc_spectral_package.py", "--mode", "methods", "--json"], "plugin_qc_methods", checked, mismatches, warnings)
@@ -611,6 +614,51 @@ def _run_codex_config_preflight_selftest(
     finally:
         if test_dir.exists():
             shutil.rmtree(test_dir)
+
+
+def _run_codex_desktop_install_selftest(
+    checked: list[dict[str, Any]],
+    mismatches: list[dict[str, Any]],
+    warnings: list[dict[str, Any]],
+) -> None:
+    script = ROOT / "install" / "install_codex_plugin.py"
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    with tempfile.TemporaryDirectory(prefix="spectral-codex-home-") as temp_dir:
+        test_home = Path(temp_dir)
+        try:
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(script),
+                    "--repo-root",
+                    str(ROOT),
+                    "--codex-home",
+                    str(test_home),
+                    "--json",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                env=env,
+            )
+            payload = json.loads(completed.stdout)
+            result = payload.get("result", {})
+            cache_path = Path(result.get("cache", {}).get("path", ""))
+            config_path = test_home / "config.toml"
+            if completed.returncode != 0 or not payload.get("ok"):
+                mismatches.append(_issue("CODEX_DESKTOP_INSTALL_FAILED", "Codex Desktop installer rejected a sandbox install.", severity="error", stdout=completed.stdout, stderr=completed.stderr))
+            elif not config_path.exists():
+                mismatches.append(_issue("CODEX_DESKTOP_INSTALL_CONFIG_MISSING", "Codex Desktop installer did not write config.toml in the sandbox.", severity="error", path=str(config_path)))
+            elif not (cache_path / ".codex-plugin" / "plugin.json").exists():
+                mismatches.append(_issue("CODEX_DESKTOP_INSTALL_CACHE_MISSING", "Codex Desktop installer did not materialize the plugin cache.", severity="error", path=str(cache_path)))
+            elif not (cache_path / "skills" / "spectral-workflow" / "SKILL.md").exists():
+                mismatches.append(_issue("CODEX_DESKTOP_INSTALL_SKILL_MISSING", "Codex Desktop installer cache is missing spectral-workflow.", severity="error", path=str(cache_path)))
+            else:
+                checked.append(_ok("codex_desktop_install_selftest", str(script)))
+        except Exception as exc:
+            mismatches.append(_issue("CODEX_DESKTOP_INSTALL_EXCEPTION", "Codex Desktop install self-test could not run.", severity="error", error=str(exc)))
 
 
 def _remove_empty_dir(path: Path) -> None:

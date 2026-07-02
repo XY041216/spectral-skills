@@ -92,6 +92,30 @@ codex plugin marketplace add https://github.com/XY041216/spectral-skills.git --r
 codex plugin add spectral-skills@spectral-skills-local-marketplace
 ```
 
+If the Codex CLI cannot run on Windows, or if `config.toml` contains the
+marketplace entry but the plugin does not appear under
+`%USERPROFILE%\.codex\plugins\cache`, run the repository installer from the
+clone root:
+
+```bash
+python install/install_codex_plugin.py --json
+```
+
+This installer does both required local steps:
+
+- upserts the `spectral-skills-local-marketplace` and
+  `spectral-skills@spectral-skills-local-marketplace` entries in
+  `config.toml`, after writing a backup;
+- materializes the built plugin image into
+  `%USERPROFILE%\.codex\plugins\cache\spectral-skills-local-marketplace\spectral-skills\<version>\`.
+
+Run the verifier after installation:
+
+```bash
+python install/check_codex_plugin.py --json
+python install/check_codex_config.py --json
+```
+
 Codex Desktop users can add the same repository as a custom plugin marketplace:
 
 ```text
@@ -156,16 +180,18 @@ source = 'C:\path\to\spectral-skills'
 enabled = true
 ```
 
-After the Agent loads that marketplace/plugin, it copies the plugin into its
-own cache. A typical installed path looks like:
+After the Agent loads that marketplace/plugin, or after
+`install/install_codex_plugin.py` materializes the local cache, a typical
+installed path looks like:
 
 ```text
 C:\Users\<USER>\.codex\plugins\cache\spectral-skills-local-marketplace\spectral-skills\0.1.0-beta.1\
 ```
 
-Users normally do not edit that cache folder. They install/enable the plugin
-through the marketplace source, then invoke the skills by name. The main
-full-chain entry is:
+Users normally do not hand-edit that cache folder. If Desktop does not create
+it automatically, use `python install/install_codex_plugin.py --json` so the
+cache copy is created from the release image and validated. Then restart Codex
+in a new thread and invoke the skills by name. The main full-chain entry is:
 
 ```text
 $spectral-skills:spectral-workflow
