@@ -12,7 +12,6 @@ def _find_runtime_root() -> Path:
     candidates: list[Path] = []
     for parent in here.parents:
         candidates.append(parent)
-        candidates.append(parent / "spectral-core")
     for candidate in candidates:
         if (candidate / "spectral_core" / "__init__.py").is_file():
             return candidate

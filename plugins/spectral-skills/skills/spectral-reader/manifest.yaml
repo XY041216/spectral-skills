@@ -1,5 +1,5 @@
 name: spectral-reader
-version: 0.1.0-beta.1
+version: 0.1.0-beta.2
 description: Runtime spectral dataset reader. Use read_spectral_dataset to convert user data files or folders into X.csv, optional y.csv, sample_ids.csv, band_axis.csv, optional metadata.csv, and data_contract.json.
 skill_type: data reader
 

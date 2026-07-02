@@ -1,5 +1,5 @@
 name: spectral-optimizer
-version: 0.1.0-beta.1
+version: 0.1.0-beta.2
 description: Leakage-safe recommendation, tuning, step comparison, and budgeted pipeline optimization planning for spectral workflows.
 skill_type: optimization
 

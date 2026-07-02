@@ -1,5 +1,5 @@
 name: spectral-splitter
-version: 0.1.0-beta.1
+version: 0.1.0-beta.2
 description: Reproducible train validation test splitting for standard spectral data packages.
 skill_type: data splitting
 

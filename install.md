@@ -61,7 +61,7 @@ The repository root also contains Claude-compatible metadata:
 Before publishing a new release, keep the semantic plugin version in
 `install/build_codex_plugin.py` and all skill manifests aligned. Use the PEP 440
 equivalent in `pyproject.toml`/`uv.lock` (for example, plugin
-`0.1.0-beta.1` maps to Python package `0.1.0b1`). Rebuild the plugin image and
+`0.1.0-beta.2` maps to Python package `0.1.0b2`). Rebuild the plugin image and
 let `check_codex_plugin.py` verify the generated `plugin.json` version.
 
 ## Codex Plugin Install
@@ -135,7 +135,7 @@ After the Agent loads that marketplace/plugin, it copies the plugin into its
 own cache. A typical installed path looks like:
 
 ```text
-C:\Users\<USER>\.codex\plugins\cache\spectral-skills-local-marketplace\spectral-skills\0.1.0-beta.1\
+C:\Users\<USER>\.codex\plugins\cache\spectral-skills-local-marketplace\spectral-skills\0.1.0-beta.2\
 ```
 
 Users normally do not edit that cache folder. They install/enable the plugin
@@ -154,34 +154,51 @@ split 6:2:2, apply SNV preprocessing, use no feature reduction, and train a
 random_forest_classifier.
 ```
 
-## Direct GitHub Skill Installer
+## Complete Local-Skill Install
 
-The full plugin marketplace install above is preferred. If a Codex session uses
-the GitHub skill installer directly, do not install only the nine user-facing
-stage skills. Install the shared runtime skill as well:
+Spectral Skills is an integrated bundle, not a collection of independent skill
+folders. The nine user-facing skills share the repository-level `spectral_core`
+Python runtime and shared contracts. A generic GitHub skill installer copies only
+the selected skill directories, so importing `skills/spectral-*` individually is
+incomplete even if discovery reports success.
+
+Use the plugin marketplace above, or clone the repository and run the bundled
+cross-platform installer:
 
 ```bash
-python C:\Users\<USER>\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py \
-  --repo XY041216/spectral-skills \
-  --path skills/spectral-core \
-         skills/spectral-reader \
-         skills/spectral-qc \
-         skills/spectral-splitter \
-         skills/spectral-preprocess \
-         skills/spectral-feature \
-         skills/spectral-modeling \
-         skills/spectral-optimizer \
-         skills/spectral-report \
-         skills/spectral-workflow
+git clone https://github.com/XY041216/spectral-skills.git
+cd spectral-skills
+python scripts/update-codex-skills.py
 ```
 
-`spectral-core` is not a user-facing analysis skill. It provides the
-`spectral_core` Python package needed by the other scripts when they are
-installed as separate GitHub skill folders under `~/.codex/skills`.
+The installer atomically updates only these managed paths in the Codex skills
+directory:
 
-If Codex first tries `--path .`, that is a repository/plugin bundle root rather
-than a single skill path. Use the plugin marketplace install, or use the explicit
-paths above.
+```text
+spectral-reader/       spectral-qc/          spectral-splitter/
+spectral-preprocess/   spectral-feature/     spectral-modeling/
+spectral-optimizer/    spectral-report/      spectral-workflow/
+_spectral_shared/      spectral_core/
+```
+
+Only the nine `spectral-*` stage folders contain `SKILL.md`. `_spectral_shared`
+and `spectral_core` are namespaced support directories, so they are not exposed
+as user-facing skills and do not overwrite another bundle's `_shared` directory.
+The installer stages and smoke-tests the complete bundle before replacing the
+previous Spectral Skills install. It does not modify unrelated skills.
+
+Useful options:
+
+```bash
+python scripts/update-codex-skills.py --check
+python scripts/update-codex-skills.py --pull
+python scripts/update-codex-skills.py --destination /custom/codex/skills --json
+```
+
+After installation or update, restart Codex so skill discovery reloads the nine
+entries. If an older release installed `spectral-core` as a skill, remove that
+obsolete folder after this installer succeeds; the new runtime is
+`spectral_core` (underscore) and intentionally has no `SKILL.md`.
 
 ## Claude-Compatible Local Install
 

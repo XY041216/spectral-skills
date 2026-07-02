@@ -17,7 +17,7 @@ from spectral_core.reader.response import error_response, ok_response
 
 
 PLUGIN_NAME = "spectral-skills"
-PLUGIN_VERSION = "0.1.0-beta.1"
+PLUGIN_VERSION = "0.1.0-beta.2"
 PLUGIN_DESCRIPTION = (
     "Agent-oriented spectral data skills for leakage-safe spectral reading, QC, "
     "splitting, preprocessing, feature extraction, modeling, optimization, "
@@ -47,7 +47,6 @@ def build_codex_plugin(*, clean: bool = False, verify: bool = False) -> dict[str
         if clean and PLUGIN_DIR.exists():
             shutil.rmtree(PLUGIN_DIR)
         _ensure_dirs()
-        copied.append(_copy_tree(ROOT / "spectral_core", ROOT / "skills" / "spectral-core" / "spectral_core"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-reader", PLUGIN_DIR / "skills" / "spectral-reader"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-qc", PLUGIN_DIR / "skills" / "spectral-qc"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-splitter", PLUGIN_DIR / "skills" / "spectral-splitter"))

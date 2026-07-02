@@ -578,7 +578,7 @@ def test_visual_and_experimental_embeddings_are_gated(tmp_path: Path) -> None:
     assert contract["handoff"]["spectral_report"]["ready"] is True
 
 
-def test_deep_embeddings_require_confirmation_and_execute_with_audits(tmp_path: Path) -> None:
+def test_deep_embeddings_require_confirmation(tmp_path: Path) -> None:
     package_dir = _write_numeric_package(tmp_path / "package", task="classification", n_samples=18, n_features=8)
     split_contract = _write_numeric_split(tmp_path / "split", n_samples=18)
     blocked_dir = tmp_path / "blocked_deep"
@@ -598,6 +598,11 @@ def test_deep_embeddings_require_confirmation_and_execute_with_audits(tmp_path: 
     assert blocked["errors"][0]["code"] == "DEEP_EMBEDDING_TRAINING_CONFIRMATION_REQUIRED"
     assert not blocked_dir.exists()
 
+
+def test_deep_embeddings_execute_with_audits(tmp_path: Path) -> None:
+    pytest.importorskip("torch", reason="deep embedding execution requires optional PyTorch")
+    package_dir = _write_numeric_package(tmp_path / "package", task="classification", n_samples=18, n_features=8)
+    split_contract = _write_numeric_split(tmp_path / "split", n_samples=18)
     methods = [
         "autoencoder_embedding",
         "denoising_autoencoder_embedding",

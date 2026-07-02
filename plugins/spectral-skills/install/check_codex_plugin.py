@@ -9,6 +9,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +22,7 @@ from spectral_core.reader.response import error_response, ok_response
 
 PLUGIN_DIR = ROOT / "plugins" / "spectral-skills"
 PLUGIN_NAME = "spectral-skills"
-PLUGIN_VERSION = "0.1.0-beta.1"
+PLUGIN_VERSION = "0.1.0-beta.2"
 CLAUDE_PLUGIN_DIR = ROOT / ".claude-plugin"
 
 
@@ -111,7 +112,7 @@ def check_codex_plugin() -> dict[str, Any]:
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-workflow" / "manifest.yaml", checked, mismatches)
     _check_manifest_method_scopes(checked, mismatches)
     _check_schema_mirrors(checked, mismatches)
-    _check_standalone_core_skill(checked, missing, mismatches)
+    _check_local_install_sources(checked, missing, mismatches)
     _check_source_mirrors(checked, mismatches)
     _check_no_excluded_artifacts(PLUGIN_DIR, checked, mismatches)
     _run_plugin_script(["skills/spectral-reader/scripts/server_health.py", "--json"], "plugin_server_health", checked, mismatches, warnings)
@@ -123,6 +124,7 @@ def check_codex_plugin() -> dict[str, Any]:
     _run_plugin_modeling_smoke(checked, mismatches, warnings)
     _run_plugin_optimizer_smoke(checked, mismatches, warnings)
     _run_plugin_workflow_smoke(checked, mismatches, warnings)
+    _run_local_install_smoke(checked, mismatches)
     _remove_empty_dir(PLUGIN_DIR / "assets")
 
     status = "failed" if missing or any(item.get("severity") == "error" for item in mismatches) else "degraded" if mismatches or warnings else "passed"
@@ -365,7 +367,19 @@ def _check_source_mirrors(checked: list[dict[str, Any]], mismatches: list[dict[s
         [
             (ROOT / "skills" / "_shared", PLUGIN_DIR / "shared", "shared"),
             (ROOT / "spectral_core", PLUGIN_DIR / "spectral_core", "spectral_core"),
-            (ROOT / "scripts", PLUGIN_DIR / "scripts", "scripts"),
+            *[
+                (ROOT / "scripts" / name, PLUGIN_DIR / "scripts" / name, f"scripts:{name}")
+                for name in [
+                    "reader",
+                    "qc",
+                    "splitter",
+                    "preprocess",
+                    "feature",
+                    "modeling",
+                    "optimizer",
+                    "workflow",
+                ]
+            ],
             (ROOT / "install", PLUGIN_DIR / "install", "install"),
         ]
     )
@@ -419,35 +433,82 @@ def _check_schema_mirrors(checked: list[dict[str, Any]], mismatches: list[dict[s
         checked.append(_ok("shared_runtime_schema_mirrors", str(shared)))
 
 
-def _check_standalone_core_skill(
+def _check_local_install_sources(
     checked: list[dict[str, Any]],
     missing: list[dict[str, Any]],
     mismatches: list[dict[str, Any]],
 ) -> None:
-    """Ensure direct GitHub skill installs can get the shared runtime."""
+    """Ensure local installs keep shared dependencies out of skill discovery."""
 
-    skill_dir = ROOT / "skills" / "spectral-core"
-    runtime_mirror = skill_dir / "spectral_core"
-    _require_file(skill_dir / "SKILL.md", checked, missing, "standalone_spectral_core_skill")
-    _require_file(runtime_mirror / "__init__.py", checked, missing, "standalone_spectral_core_runtime")
-    source_files = _release_file_map(ROOT / "spectral_core", {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"})
-    mirror_files = _release_file_map(runtime_mirror, {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"})
-    if source_files != mirror_files:
-        source_paths = set(source_files)
-        mirror_paths = set(mirror_files)
-        changed = sorted(path for path in source_paths & mirror_paths if source_files[path] != mirror_files[path])
+    installer = ROOT / "scripts" / "update-codex-skills.py"
+    _require_file(installer, checked, missing, "local_bundle_installer")
+    _require_file(ROOT / "spectral_core" / "__init__.py", checked, missing, "local_shared_runtime")
+    _require_dir(ROOT / "skills" / "_shared", checked, missing, "local_shared_resources")
+    obsolete_skill = ROOT / "skills" / "spectral-core"
+    if obsolete_skill.exists():
         mismatches.append(
             _issue(
-                "STANDALONE_CORE_RUNTIME_MISMATCH",
-                "skills/spectral-core/spectral_core must mirror the root spectral_core runtime for direct GitHub skill installs.",
+                "RUNTIME_EXPOSED_AS_SKILL",
+                "skills/spectral-core must not exist; spectral_core is a shared runtime, not a discoverable skill.",
                 severity="error",
-                source_only=sorted(source_paths - mirror_paths)[:20],
-                mirror_only=sorted(mirror_paths - source_paths)[:20],
-                changed=changed[:20],
+                path=str(obsolete_skill),
             )
         )
     else:
-        checked.append(_ok("standalone_core_runtime_mirror", str(runtime_mirror)))
+        checked.append(_ok("runtime_not_exposed_as_skill", str(obsolete_skill)))
+
+
+def _run_local_install_smoke(
+    checked: list[dict[str, Any]],
+    mismatches: list[dict[str, Any]],
+) -> None:
+    installer = ROOT / "scripts" / "update-codex-skills.py"
+    if not installer.is_file():
+        return
+    try:
+        with tempfile.TemporaryDirectory(prefix="spectral-skills-install-") as temp_dir:
+            destination = Path(temp_dir) / "skills"
+            completed = subprocess.run(
+                [sys.executable, str(installer), "--destination", str(destination), "--json"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            )
+            try:
+                payload = json.loads(completed.stdout)
+            except json.JSONDecodeError:
+                payload = {"stdout": completed.stdout, "stderr": completed.stderr}
+            if completed.returncode != 0 or not payload.get("ok"):
+                mismatches.append(
+                    _issue(
+                        "LOCAL_INSTALL_SMOKE_FAILED",
+                        "The complete local-skill installer did not produce a valid bundle.",
+                        severity="error",
+                        returncode=completed.returncode,
+                        result=payload,
+                    )
+                )
+            elif (destination / "spectral-core" / "SKILL.md").exists():
+                mismatches.append(
+                    _issue(
+                        "LOCAL_INSTALL_EXPOSED_RUNTIME",
+                        "The local installer exposed spectral-core as a skill.",
+                        severity="error",
+                    )
+                )
+            else:
+                checked.append(_ok("local_bundle_install_smoke", str(destination)))
+    except Exception as exc:
+        mismatches.append(
+            _issue(
+                "LOCAL_INSTALL_SMOKE_EXCEPTION",
+                "The complete local-skill installer could not be tested.",
+                severity="error",
+                error=str(exc),
+            )
+        )
 
 
 def _release_file_map(root: Path, excluded_dirs: set[str]) -> dict[str, bytes]:

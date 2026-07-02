@@ -458,29 +458,22 @@ Codex Desktop 也可添加自定义插件市场：
 - Branch/ref：`main`
 - Plugin：`spectral-skills`
 
-如果使用 Codex 的 **GitHub skill installer** 直接从仓库导入子 skill，不要只安装
-`spectral-reader` 到 `spectral-workflow` 这 9 个分析入口；还必须同时安装
-`skills/spectral-core`。`spectral-core` 不是用户要主动调用的分析 skill，而是这些
-阶段脚本共享的 Python 运行时。缺少它时，独立安装的脚本会出现
-`ModuleNotFoundError: No module named 'spectral_core'`。
+这个仓库不是 9 个彼此独立的 skill：它们共享 `spectral_core` 运行时和公共契约。
+因此不要让通用 GitHub `skill-installer` 逐个导入 `skills/spectral-*`；该安装器只复制
+skill 文件夹，不能完整部署仓库级共享依赖。推荐使用上面的插件市场安装。
 
-推荐的直接 skill-installer 路径集合为：
+如果需要安装到 `~/.codex/skills`，请 clone 仓库后运行整套同步脚本：
 
-```text
-skills/spectral-core
-skills/spectral-reader
-skills/spectral-qc
-skills/spectral-splitter
-skills/spectral-preprocess
-skills/spectral-feature
-skills/spectral-modeling
-skills/spectral-optimizer
-skills/spectral-report
-skills/spectral-workflow
+```bash
+git clone https://github.com/XY041216/spectral-skills.git
+cd spectral-skills
+python scripts/update-codex-skills.py
 ```
 
-更推荐的方式仍是安装完整插件市场，因为它会一次性保留 `skills/`、`shared/`、
-`spectral_core/`、`scripts/` 和插件元数据。
+脚本会一次性安装 9 个可触发 skill，并将共享资源部署为 `_spectral_shared`、
+Python 运行时部署为 `spectral_core`。后二者都没有 `SKILL.md`，不会被误识别为
+第 10 个或第 11 个 skill；其他已安装的 skill（包括 nature-skills 的 `_shared`）
+不会被覆盖。再次运行同一脚本即可更新，使用 `--check` 可只做完整性检查。
 
 安装后开启新会话，例如：
 
@@ -569,15 +562,14 @@ python plugins/spectral-skills/skills/spectral-workflow/scripts/run_spectral_wor
 .claude-plugin/                  Claude-compatible metadata
 install/                         plugin 构建与发布检查
 plugins/spectral-skills/         发布用插件镜像（由构建脚本生成）
-skills/                          九个分析 skill + spectral-core 运行时 skill
+skills/                          九个分析 skill + 开发期共享资源
 spectral_core/                   共享运行时实现
-scripts/                         统一 CLI/runtime 脚本
+scripts/                         统一 CLI/runtime 与整套安装脚本
 README.md                        面向用户的完整能力说明
 install.md                       安装细节
 ```
 
-开发源位于 `skills/` 和 `spectral_core/`；`skills/spectral-core/spectral_core/`
-是为直接 GitHub skill 导入准备的运行时镜像，由构建/检查脚本保持同步；
+开发源位于 `skills/` 和 `spectral_core/`；共享运行时不是 skill，不带 `SKILL.md`。
 `plugins/spectral-skills/` 是生成的发布镜像，不应手工编辑。
 
 ## 能力边界与科学解释
