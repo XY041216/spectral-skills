@@ -23,6 +23,7 @@ PLUGIN_DIR = ROOT / "plugins" / "spectral-skills"
 PLUGIN_NAME = "spectral-skills"
 PLUGIN_VERSION = "0.1.0-beta.1"
 CLAUDE_PLUGIN_DIR = ROOT / ".claude-plugin"
+REPOSITORY_URL = "https://github.com/XY041216/spectral-skills.git"
 
 
 def check_codex_plugin() -> dict[str, Any]:
@@ -33,6 +34,8 @@ def check_codex_plugin() -> dict[str, Any]:
 
     plugin_json = _load_json(PLUGIN_DIR / ".codex-plugin" / "plugin.json", checked, missing, mismatches, "plugin_json")
     mcp_json = _load_json(PLUGIN_DIR / ".mcp.json", checked, missing, mismatches, "mcp_json")
+    root_plugin_json = _load_json(ROOT / ".codex-plugin" / "plugin.json", checked, missing, mismatches, "root_plugin_json")
+    root_mcp_json = _load_json(ROOT / ".mcp.json", checked, missing, mismatches, "root_mcp_json")
     _load_json(ROOT / ".agents" / "plugins" / "marketplace.json", checked, missing, mismatches, "marketplace_json")
     claude_plugin_json = _load_json(CLAUDE_PLUGIN_DIR / "plugin.json", checked, missing, mismatches, "claude_plugin_json")
     claude_marketplace_json = _load_json(CLAUDE_PLUGIN_DIR / "marketplace.json", checked, missing, mismatches, "claude_marketplace_json")
@@ -97,9 +100,11 @@ def check_codex_plugin() -> dict[str, Any]:
         checked.append(_ok("shared_skill_absent", str(PLUGIN_DIR / "shared" / "SKILL.md")))
 
     _check_plugin_json(plugin_json, checked, mismatches)
+    _check_root_plugin_json(root_plugin_json, checked, mismatches)
     _check_claude_plugin_json(claude_plugin_json, checked, mismatches)
     _check_claude_marketplace_json(claude_marketplace_json, checked, mismatches)
     _check_mcp_json(mcp_json, checked, mismatches)
+    _check_root_mcp_json(root_mcp_json, checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-reader" / "manifest.yaml", checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-qc" / "manifest.yaml", checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-splitter" / "manifest.yaml", checked, mismatches)
@@ -174,6 +179,57 @@ def _check_plugin_json(payload: dict[str, Any], checked: list[dict[str, Any]], m
         mismatches.append(_issue("PLUGIN_SKILLS_PATH_MISMATCH", "plugin.json skills path must point to ./skills.", severity="error", observed=payload.get("skills")))
     else:
         checked.append(_ok("plugin_skills_path", str(payload.get("skills"))))
+    if payload.get("mcpServers") != "./.mcp.json":
+        mismatches.append(_issue("PLUGIN_MCP_DECLARATION_MISSING", "plugin.json must declare mcpServers as ./.mcp.json.", severity="error", observed=payload.get("mcpServers")))
+    else:
+        checked.append(_ok("plugin_mcp_servers_path", "./.mcp.json"))
+    author = payload.get("author") or {}
+    if author.get("name") != "Spectral Skills Contributors":
+        mismatches.append(_issue("PLUGIN_AUTHOR_MISSING", "plugin.json must include the Spectral Skills author object.", severity="error", observed=author))
+    else:
+        checked.append(_ok("plugin_author", author["name"]))
+    if payload.get("repository") != REPOSITORY_URL:
+        mismatches.append(_issue("PLUGIN_REPOSITORY_MISMATCH", "plugin.json repository must point to the public GitHub repository.", severity="error", expected=REPOSITORY_URL, observed=payload.get("repository")))
+    else:
+        checked.append(_ok("plugin_repository", REPOSITORY_URL))
+    interface = payload.get("interface") or {}
+    required_interface = ["displayName", "shortDescription", "longDescription", "developerName", "category", "capabilities", "defaultPrompt"]
+    missing_interface = [key for key in required_interface if not interface.get(key)]
+    if missing_interface:
+        mismatches.append(_issue("PLUGIN_INTERFACE_INCOMPLETE", "plugin.json interface metadata is incomplete.", severity="error", missing=missing_interface))
+    else:
+        checked.append(_ok("plugin_interface", interface.get("displayName", "")))
+
+
+def _check_root_plugin_json(payload: dict[str, Any], checked: list[dict[str, Any]], mismatches: list[dict[str, Any]]) -> None:
+    if payload.get("name") != PLUGIN_NAME:
+        mismatches.append(_issue("ROOT_PLUGIN_NAME_MISMATCH", "Root .codex-plugin/plugin.json name must be spectral-skills.", severity="error", observed=payload.get("name")))
+    else:
+        checked.append(_ok("root_plugin_name", PLUGIN_NAME))
+    if payload.get("version") != PLUGIN_VERSION:
+        mismatches.append(_issue("ROOT_PLUGIN_VERSION_MISMATCH", "Root plugin version must match the current release version.", severity="error", expected=PLUGIN_VERSION, observed=payload.get("version")))
+    else:
+        checked.append(_ok("root_plugin_version", PLUGIN_VERSION))
+    if payload.get("skills") != "./plugins/spectral-skills/skills":
+        mismatches.append(
+            _issue(
+                "ROOT_PLUGIN_SKILLS_PATH_MISMATCH",
+                "Root plugin entrypoint must delegate skills to the built plugin image.",
+                severity="error",
+                observed=payload.get("skills"),
+            )
+        )
+    else:
+        checked.append(_ok("root_plugin_skills_path", "./plugins/spectral-skills/skills"))
+    if payload.get("mcpServers") != "./.mcp.json":
+        mismatches.append(_issue("ROOT_PLUGIN_MCP_DECLARATION_MISSING", "Root plugin entrypoint must declare mcpServers as ./.mcp.json.", severity="error", observed=payload.get("mcpServers")))
+    else:
+        checked.append(_ok("root_plugin_mcp_servers_path", "./.mcp.json"))
+    interface = payload.get("interface") or {}
+    if interface.get("displayName") != "Spectral Skills":
+        mismatches.append(_issue("ROOT_PLUGIN_INTERFACE_MISMATCH", "Root plugin entrypoint must expose the Spectral Skills interface metadata.", severity="error", observed=interface))
+    else:
+        checked.append(_ok("root_plugin_interface", interface["displayName"]))
 
 
 def _check_claude_plugin_json(payload: dict[str, Any], checked: list[dict[str, Any]], mismatches: list[dict[str, Any]]) -> None:
@@ -231,6 +287,26 @@ def _check_mcp_json(payload: dict[str, Any], checked: list[dict[str, Any]], mism
         checked.append(_ok("mcp_pythonpath", "."))
     if command and (":" in command or "\\" in command or "/" in command):
         mismatches.append(_issue("MCP_ABSOLUTE_PYTHON_PATH", ".mcp.json must not hard-code a machine Python path.", severity="error", command=command))
+
+
+def _check_root_mcp_json(payload: dict[str, Any], checked: list[dict[str, Any]], mismatches: list[dict[str, Any]]) -> None:
+    server = ((payload.get("mcpServers") or {}).get("spectral-reader") or {})
+    command = server.get("command")
+    if command != "python":
+        mismatches.append(_issue("ROOT_MCP_COMMAND_MISMATCH", "Root .mcp.json must use generic python command.", severity="error", observed=command))
+    else:
+        checked.append(_ok("root_mcp_command", command))
+    args = server.get("args") or []
+    expected_args = ["plugins/spectral-skills/skills/spectral-reader/mcp-server/server.py"]
+    if args != expected_args:
+        mismatches.append(_issue("ROOT_MCP_ARGS_MISMATCH", "Root .mcp.json args must point to the built plugin image server.py.", severity="error", expected=expected_args, observed=args))
+    else:
+        checked.append(_ok("root_mcp_args", ",".join(args)))
+    env = server.get("env") or {}
+    if env.get("PYTHONPATH") != "plugins/spectral-skills":
+        mismatches.append(_issue("ROOT_MCP_PYTHONPATH_MISMATCH", "Root .mcp.json must set PYTHONPATH to the built plugin image.", severity="error", observed=env.get("PYTHONPATH")))
+    else:
+        checked.append(_ok("root_mcp_pythonpath", "plugins/spectral-skills"))
 
 
 def _check_yaml(path: Path, checked: list[dict[str, Any]], mismatches: list[dict[str, Any]]) -> None:

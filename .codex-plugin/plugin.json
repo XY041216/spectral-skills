@@ -1,7 +1,7 @@
 {
   "name": "spectral-skills",
   "version": "0.1.0-beta.1",
-  "description": "Agent-oriented spectral data skills for leakage-safe spectral reading, QC, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing.",
+  "description": "Agent-oriented spectral data skills for leakage-safe spectral reading, QC, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing. This repository root is a GitHub import entrypoint that delegates Codex components to the built plugins/spectral-skills plugin image.",
   "author": {
     "name": "Spectral Skills Contributors",
     "url": "https://github.com/XY041216/spectral-skills"
@@ -17,7 +17,7 @@
     "workflow",
     "publication-figures"
   ],
-  "skills": "./skills",
+  "skills": "./plugins/spectral-skills/skills",
   "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Spectral Skills",

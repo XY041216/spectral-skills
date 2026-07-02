@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "spectral-reader": {
+      "command": "python",
+      "args": [
+        "plugins/spectral-skills/skills/spectral-reader/mcp-server/server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "plugins/spectral-skills"
+      }
+    }
+  }
+}

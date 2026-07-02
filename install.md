@@ -81,6 +81,12 @@ Branch/ref: main
 Plugin: spectral-skills
 ```
 
+The repository root now also contains `.codex-plugin/plugin.json` and `.mcp.json`
+as a GitHub plugin-import entrypoint. That root manifest delegates the Codex
+skills path to `plugins/spectral-skills/skills`, which is the built release
+image. This prevents a generic GitHub import flow from treating the development
+source under root `skills/` as the release unit.
+
 For purely local Codex use, give the user a release bundle that contains both:
 
 ```text
@@ -154,34 +160,22 @@ split 6:2:2, apply SNV preprocessing, use no feature reduction, and train a
 random_forest_classifier.
 ```
 
-## Direct GitHub Skill Installer
+## Do Not Use Direct GitHub Skill Installer
 
-The full plugin marketplace install above is preferred. If a Codex session uses
-the GitHub skill installer directly, do not install only the nine user-facing
-stage skills. Install the shared runtime skill as well:
+Spectral Skills is a plugin release unit, not a set of independent GitHub skill
+folders. If an import log shows `skill-installer` or
+`install-skill-from-github.py --repo XY041216/spectral-skills`, stop that flow
+and install the plugin marketplace instead.
+
+Direct skill installation copies isolated folders into `~/.codex/skills` and can
+drop shared runtime files, plugin metadata, MCP configuration, and release
+checks. Even when individual folders appear to install successfully, the result
+is not the supported Spectral Skills distribution. Use:
 
 ```bash
-python C:\Users\<USER>\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py \
-  --repo XY041216/spectral-skills \
-  --path skills/spectral-core \
-         skills/spectral-reader \
-         skills/spectral-qc \
-         skills/spectral-splitter \
-         skills/spectral-preprocess \
-         skills/spectral-feature \
-         skills/spectral-modeling \
-         skills/spectral-optimizer \
-         skills/spectral-report \
-         skills/spectral-workflow
+codex plugin marketplace add https://github.com/XY041216/spectral-skills.git --ref main
+codex plugin add spectral-skills@spectral-skills-local-marketplace
 ```
-
-`spectral-core` is not a user-facing analysis skill. It provides the
-`spectral_core` Python package needed by the other scripts when they are
-installed as separate GitHub skill folders under `~/.codex/skills`.
-
-If Codex first tries `--path .`, that is a repository/plugin bundle root rather
-than a single skill path. Use the plugin marketplace install, or use the explicit
-paths above.
 
 ## Claude-Compatible Local Install
 

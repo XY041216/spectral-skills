@@ -23,6 +23,39 @@ PLUGIN_DESCRIPTION = (
     "splitting, preprocessing, feature extraction, modeling, optimization, "
     "reporting, and workflow routing."
 )
+PLUGIN_AUTHOR = {
+    "name": "Spectral Skills Contributors",
+    "url": "https://github.com/XY041216/spectral-skills",
+}
+PLUGIN_KEYWORDS = [
+    "spectral",
+    "chemometrics",
+    "classification",
+    "regression",
+    "workflow",
+    "publication-figures",
+]
+PLUGIN_INTERFACE = {
+    "displayName": "Spectral Skills",
+    "shortDescription": "Leakage-safe spectral data processing workflows.",
+    "longDescription": (
+        "Spectral Skills packages nine coordinated Codex skills for spectral "
+        "data reading, QC, splitting, preprocessing, feature extraction, "
+        "modeling, optimization, reporting, and workflow routing. The bundle "
+        "keeps shared runtime code and schemas inside one plugin image so the "
+        "skills install and update together."
+    ),
+    "developerName": "Spectral Skills Contributors",
+    "category": "Productivity",
+    "capabilities": ["Write", "Data Analysis", "Research"],
+    "websiteURL": "https://github.com/XY041216/spectral-skills",
+    "defaultPrompt": [
+        "Run a leakage-safe spectral workflow.",
+        "Read spectral data into a standard package.",
+        "Create publication-ready spectral figures.",
+    ],
+    "brandColor": "#2563EB",
+}
 PLUGIN_DIR = ROOT / "plugins" / PLUGIN_NAME
 CLAUDE_PLUGIN_DIR = ROOT / ".claude-plugin"
 EXCLUDED_DIRS = {
@@ -128,6 +161,7 @@ def _ensure_dirs() -> None:
         PLUGIN_DIR / "scripts" / "optimizer",
         PLUGIN_DIR / "scripts" / "workflow",
         PLUGIN_DIR / "install",
+        ROOT / ".codex-plugin",
         ROOT / ".agents" / "plugins",
         CLAUDE_PLUGIN_DIR,
     ]:
@@ -161,7 +195,14 @@ def _write_plugin_files() -> list[str]:
         "name": PLUGIN_NAME,
         "version": PLUGIN_VERSION,
         "description": PLUGIN_DESCRIPTION,
+        "author": PLUGIN_AUTHOR,
+        "homepage": "https://github.com/XY041216/spectral-skills",
+        "repository": "https://github.com/XY041216/spectral-skills.git",
+        "license": "MIT",
+        "keywords": PLUGIN_KEYWORDS,
         "skills": "./skills",
+        "mcpServers": "./.mcp.json",
+        "interface": PLUGIN_INTERFACE,
     }
     mcp_json = {
         "mcpServers": {
@@ -169,6 +210,32 @@ def _write_plugin_files() -> list[str]:
                 "command": "python",
                 "args": ["skills/spectral-reader/mcp-server/server.py"],
                 "env": {"PYTHONPATH": "."},
+            }
+        }
+    }
+    root_plugin_json = {
+        "name": PLUGIN_NAME,
+        "version": PLUGIN_VERSION,
+        "description": (
+            f"{PLUGIN_DESCRIPTION} This repository root is a GitHub import "
+            "entrypoint that delegates Codex components to the built "
+            "plugins/spectral-skills plugin image."
+        ),
+        "author": PLUGIN_AUTHOR,
+        "homepage": "https://github.com/XY041216/spectral-skills",
+        "repository": "https://github.com/XY041216/spectral-skills.git",
+        "license": "MIT",
+        "keywords": PLUGIN_KEYWORDS,
+        "skills": "./plugins/spectral-skills/skills",
+        "mcpServers": "./.mcp.json",
+        "interface": PLUGIN_INTERFACE,
+    }
+    root_mcp_json = {
+        "mcpServers": {
+            "spectral-reader": {
+                "command": "python",
+                "args": ["plugins/spectral-skills/skills/spectral-reader/mcp-server/server.py"],
+                "env": {"PYTHONPATH": "plugins/spectral-skills"},
             }
         }
     }
@@ -271,6 +338,8 @@ PyTorch models, XGBoost, LightGBM, and CatBoost require their local dependencies
     files = {
         PLUGIN_DIR / ".codex-plugin" / "plugin.json": plugin_json,
         PLUGIN_DIR / ".mcp.json": mcp_json,
+        ROOT / ".codex-plugin" / "plugin.json": root_plugin_json,
+        ROOT / ".mcp.json": root_mcp_json,
     }
     written: list[str] = []
     for path, payload in files.items():
@@ -316,11 +385,11 @@ def _write_claude_plugin_files() -> list[Path]:
             "spectral-optimizer, spectral-report, and spectral-workflow."
         ),
         "version": PLUGIN_VERSION,
-        "author": {"name": "Spectral Skills Contributors", "email": ""},
+        "author": PLUGIN_AUTHOR,
         "license": "MIT",
-        "homepage": "",
-        "repository": "",
-        "keywords": ["spectral", "chemometrics", "classification", "regression", "workflow", "publication-figures"],
+        "homepage": "https://github.com/XY041216/spectral-skills",
+        "repository": "https://github.com/XY041216/spectral-skills.git",
+        "keywords": PLUGIN_KEYWORDS,
     }
     marketplace_json = {
         "name": PLUGIN_NAME,
@@ -334,7 +403,7 @@ def _write_claude_plugin_files() -> list[Path]:
                 "source": "./",
                 "description": PLUGIN_DESCRIPTION,
                 "author": {"name": "Spectral Skills Contributors"},
-                "keywords": ["spectral", "chemometrics", "classification", "regression", "workflow", "publication-figures"],
+                "keywords": PLUGIN_KEYWORDS,
                 "category": "research",
             }
         ],
