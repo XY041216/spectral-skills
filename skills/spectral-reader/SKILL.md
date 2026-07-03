@@ -84,6 +84,14 @@ and final `class`/`label`/`target` columns should be auto-recognized. Use
 explicit `--spectral-start-column`, `--spectral-end-column`,
 `--sample-id-column-index`, and `--confirm-read-plan` only as a reproducibility
 or fallback path when automatic inference is not sufficient.
+`--spectral-start-column` and `--spectral-end-column` name source columns or
+headers; numeric text such as `3600` or `200` means the actual numeric band
+header, not a zero-based position. When the user means positional boundaries,
+use `--spectral-start-column-index` and `--spectral-end-column-index`. For a
+wide table with a sample-id column at index 0 and spectral features at indexes
+1..3401, use `--spectral-start-column-index 1 --spectral-end-column-index
+3401` or rely on automatic detection; do not pass `--spectral-end-column 3401`
+unless a source header literally named `3401` is intended.
 
 Internal read settings may exist while reading, but they are not a user-facing
 workflow and must not be treated as a development process.
@@ -126,7 +134,9 @@ Block instead of writing a pseudo-ready package when structural alignment fails.
 Block instead of writing a ready package when post-read audit shows suspicious
 feature loss, for example a CSV with thousands of numeric wavenumber columns
 but an X matrix with only tens of features. Recommend explicit
-`spectral_start_column` and `spectral_end_column` rather than continuing.
+`spectral_start_column_index` and `spectral_end_column_index` for positional
+ranges, or explicit `spectral_start_column` and `spectral_end_column` only when
+the boundary values are literal source headers.
 
 ## Execution Boundary
 

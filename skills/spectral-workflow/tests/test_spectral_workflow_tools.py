@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from spectral_core.workflow.state import create_workflow_plan
 from spectral_core.workflow.workflow import run_spectral_workflow
 
 
@@ -192,6 +193,40 @@ def test_raw_reader_splitter_modeling_workflow(tmp_path: Path) -> None:
     assert (output_dir / "workflow_plan.json").exists()
 
 
+def test_workflow_requires_confirmation_after_validation_only_modeling(tmp_path: Path) -> None:
+    raw = _write_raw_classification(tmp_path / "raw.csv")
+    output_dir = tmp_path / "workflow"
+    calls: list[tuple[str, list[str]]] = []
+
+    response = run_spectral_workflow(
+        input_path=raw,
+        output_dir=output_dir,
+        task_goal="classification",
+        split_ratio="6:2:2",
+        split_method="stratified",
+        preprocess_methods="snv",
+        feature_method="none",
+        models="svm",
+        require_test_confirmation=True,
+        overwrite=True,
+        stage_runner=_fake_stage_runner(output_dir, calls),
+    )
+
+    assert response["ok"] is False
+    assert response["errors"][0]["code"] == "TEST_EVALUATION_CONFIRMATION_REQUIRED"
+    assert response["result"]["workflow_status"] == "needs_confirmation"
+    assert response["result"]["status"] == "needs_confirmation"
+    assert response["result"]["confirmation_required"][0]["field"] == "test_evaluation"
+    assert response["result"]["stage_outputs"]["modeling"].endswith("modeling_contract.json")
+    modeling_args = next(args for stage, args in calls if stage == "modeling")
+    assert modeling_args[modeling_args.index("--evaluation-mode") + 1] == "validation_only"
+    assert "--require-test-confirmation" in modeling_args
+    assert "--confirm-test-evaluation" not in modeling_args
+    workflow_result = json.loads((output_dir / "workflow_result.json").read_text(encoding="utf-8"))
+    assert workflow_result["workflow_status"] == "needs_confirmation"
+    assert workflow_result["handoff_ready"] is False
+
+
 def test_workflow_forwards_reader_wide_table_arguments(tmp_path: Path) -> None:
     raw = _write_raw_classification(tmp_path / "raw.csv")
     output_dir = tmp_path / "workflow"
@@ -234,6 +269,37 @@ def test_workflow_forwards_reader_wide_table_arguments(tmp_path: Path) -> None:
     assert reader_args[reader_args.index("--max-spectral-columns") + 1] == "24000"
     assert reader_args[reader_args.index("--wide-table-mode") + 1] == "auto"
     assert "--confirm-read-plan" in reader_args
+
+
+def test_workflow_forwards_reader_spectral_column_indexes(tmp_path: Path) -> None:
+    raw = _write_raw_classification(tmp_path / "raw.csv")
+    output_dir = tmp_path / "workflow"
+    calls: list[tuple[str, list[str]]] = []
+
+    response = run_spectral_workflow(
+        input_path=raw,
+        output_dir=output_dir,
+        task_goal="classification",
+        split_ratio="6:2:2",
+        split_method="random",
+        preprocess_methods="none",
+        feature_method="none",
+        models="random_forest_classifier",
+        reader_sample_orientation="rows",
+        reader_sample_id_column_index=0,
+        reader_label_column="class",
+        reader_spectral_start_column=1,
+        reader_spectral_end_column=3,
+        overwrite=True,
+        stage_runner=_fake_stage_runner(output_dir, calls),
+    )
+
+    assert response["ok"] is True
+    reader_args = next(args for stage, args in calls if stage == "reader")
+    assert reader_args[reader_args.index("--spectral-start-column-index") + 1] == "1"
+    assert reader_args[reader_args.index("--spectral-end-column-index") + 1] == "3"
+    assert "--spectral-start-column" not in reader_args
+    assert "--spectral-end-column" not in reader_args
 
 
 def test_run_workflow_cli_accepts_reader_wide_table_aliases(tmp_path: Path) -> None:
@@ -848,6 +914,33 @@ def test_workflow_cli_output_root_runs_managed_pipeline(tmp_path: Path) -> None:
     assert (run_dir / "logs" / "qc.log").exists()
     assert (output_root / "package" / "runs_index.csv").exists()
     assert (output_root / "package" / "latest.txt").read_text(encoding="utf-8") == run_name
+
+
+def test_workflow_plan_normalizes_baseline_task_alias(tmp_path: Path) -> None:
+    output_dir = tmp_path / "workflow_state_baseline_alias"
+
+    response = create_workflow_plan(
+        output_dir=output_dir,
+        task_goal="classification_baseline",
+        input_path="raw.csv",
+        include_qc=True,
+        split_ratio="6:2:2",
+        split_method="stratified",
+        preprocess_methods="snv",
+        feature_method="none",
+        models="svm",
+    )
+
+    assert Path(response["workflow_plan"]).exists()
+    plan = json.loads((output_dir / "workflow_plan.json").read_text(encoding="utf-8"))
+    assert plan["task_goal"] == "classification"
+    by_stage = {stage["stage"]: stage for stage in plan["stages"]}
+    assert by_stage["reader"]["status"] == "execute"
+    assert by_stage["qc"]["status"] == "execute"
+    assert by_stage["splitter"]["status"] == "execute"
+    assert by_stage["preprocess"]["status"] == "execute"
+    assert by_stage["feature"]["status"] == "skip"
+    assert by_stage["modeling"]["status"] == "execute"
 
 
 def test_workflow_state_cli_tools_create_decision_and_result(tmp_path: Path) -> None:

@@ -9,10 +9,7 @@ from pathlib import Path
 
 def _find_runtime_root() -> Path:
     here = Path(__file__).resolve()
-    candidates: list[Path] = []
-    for parent in here.parents:
-        candidates.append(parent)
-        candidates.append(parent / "spectral-core")
+    candidates = list(here.parents) + [parent / "spectral-core" for parent in here.parents]
     for candidate in candidates:
         if (candidate / "spectral_core" / "__init__.py").is_file():
             return candidate
@@ -110,8 +107,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--reader-target-columns")
     parser.add_argument("--reader-sample-id-column")
     parser.add_argument("--reader-sample-id-column-index", type=int)
-    parser.add_argument("--reader-spectral-start-column")
-    parser.add_argument("--reader-spectral-end-column")
+    parser.add_argument("--reader-spectral-start-column", help="First spectral column name; numeric text is a header value.")
+    parser.add_argument("--reader-spectral-end-column", help="Last spectral column name; numeric text is a header value.")
+    parser.add_argument("--reader-spectral-start-column-index", type=int, help="Zero-based first spectral column position.")
+    parser.add_argument("--reader-spectral-end-column-index", type=int, help="Zero-based last spectral column position.")
     parser.add_argument("--reader-band-type")
     parser.add_argument("--reader-band-unit")
     parser.add_argument("--reader-max-auto-columns", "--max-auto-columns", dest="reader_max_auto_columns", type=int, default=10000)
@@ -123,6 +122,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    _reject_mixed_reader_spectral_boundaries(parser, args)
     response = run_spectral_workflow(
         input_path=_resolve_cli_path(args.input),
         package_dir=_resolve_cli_path(args.package_dir),
@@ -206,8 +206,8 @@ def main(argv: list[str] | None = None) -> int:
         reader_target_columns=_split_csv_arg(args.reader_target_columns),
         reader_sample_id_column=args.reader_sample_id_column,
         reader_sample_id_column_index=args.reader_sample_id_column_index,
-        reader_spectral_start_column=args.reader_spectral_start_column,
-        reader_spectral_end_column=args.reader_spectral_end_column,
+        reader_spectral_start_column=args.reader_spectral_start_column_index if args.reader_spectral_start_column_index is not None else args.reader_spectral_start_column,
+        reader_spectral_end_column=args.reader_spectral_end_column_index if args.reader_spectral_end_column_index is not None else args.reader_spectral_end_column,
         reader_band_type=args.reader_band_type,
         reader_band_unit=args.reader_band_unit,
         reader_max_auto_columns=args.reader_max_auto_columns,
@@ -233,6 +233,13 @@ def _resolve_cli_path(value: str | None) -> str | None:
     if value is None:
         return None
     return str(Path(value).expanduser().resolve())
+
+
+def _reject_mixed_reader_spectral_boundaries(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    if args.reader_spectral_start_column is not None and args.reader_spectral_start_column_index is not None:
+        parser.error("Use either --reader-spectral-start-column or --reader-spectral-start-column-index, not both.")
+    if args.reader_spectral_end_column is not None and args.reader_spectral_end_column_index is not None:
+        parser.error("Use either --reader-spectral-end-column or --reader-spectral-end-column-index, not both.")
 
 
 if __name__ == "__main__":

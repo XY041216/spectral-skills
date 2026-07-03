@@ -19,6 +19,32 @@ WORKFLOW_LOCK_TIMEOUT_SECONDS = 30.0
 WORKFLOW_LOCK_POLL_SECONDS = 0.05
 
 
+def normalize_workflow_goal(task_goal: str | None) -> str | None:
+    if task_goal is None or not str(task_goal).strip():
+        return None
+    text = str(task_goal).strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "read_only": "read",
+        "quality_check": "qc",
+        "check_quality": "qc",
+        "splitter": "split",
+        "splitting": "split",
+        "prepare_optimizer": "prepare_for_optimizer",
+        "optimizer_prepare": "prepare_for_optimizer",
+        "prepare_for_optimization": "prepare_for_optimizer",
+        "compare_preprocessing": "compare_preprocess",
+        "classify": "classification",
+        "classifier": "classification",
+        "classification_baseline": "classification",
+        "baseline_classification": "classification",
+        "regress": "regression",
+        "regression_baseline": "regression",
+        "baseline_regression": "regression",
+        "model": "modeling",
+    }
+    return aliases.get(text, text)
+
+
 def create_workflow_plan(
     *,
     output_dir: str | Path,
@@ -44,6 +70,7 @@ def create_workflow_plan(
     models: str | list[str] | None = None,
     random_seed: int = 42,
 ) -> dict[str, Any]:
+    task_goal = normalize_workflow_goal(task_goal)
     root = Path(output_dir)
     root.mkdir(parents=True, exist_ok=True)
     modeling_goal = task_goal in {"classification", "regression", "modeling"}
@@ -227,6 +254,7 @@ def update_workflow_result(
     final_output_relative: str | None = None,
     workflow_plan: str | None = None,
     workflow_status: str = "ready",
+    confirmation_required: list[dict[str, Any]] | None = None,
     warnings: list[dict[str, Any]] | None = None,
     run_id: str | None = None,
     dataset_name: str | None = None,
@@ -252,6 +280,7 @@ def update_workflow_result(
             "final_output_relative": final_output_relative or existing.get("final_output_relative"),
             "workflow_plan": workflow_plan or existing.get("workflow_plan"),
             "handoff_ready": workflow_status == "ready",
+            "confirmation_required": confirmation_required if confirmation_required is not None else existing.get("confirmation_required", []),
             "warnings": warnings if warnings is not None else existing.get("warnings", []),
             "execution": {"updated_at": datetime.now(timezone.utc).isoformat()},
         }

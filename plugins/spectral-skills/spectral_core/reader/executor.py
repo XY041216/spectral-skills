@@ -1610,6 +1610,11 @@ def _column_index(header: list[str], value: Any, *, default: int | None = None) 
 
 
 def _column_index_for_role(header: list[str], value: Any, *, default: int | None = None, code: str = "COLUMN_NOT_FOUND") -> int:
+    if isinstance(value, int) and not isinstance(value, bool):
+        try:
+            return _column_index(header, value, default=default)
+        except ApplyBlockedError as exc:
+            raise ApplyBlockedError(code, exc.message, **exc.details) from exc
     text = str(value) if value is not None else None
     if text in header:
         return header.index(text)

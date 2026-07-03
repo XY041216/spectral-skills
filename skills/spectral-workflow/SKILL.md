@@ -42,6 +42,16 @@ edit `workflow_plan.json` by appending text or by hand-rewriting partial JSON.
 If a plan cannot be parsed, stop and report the corrupted file instead of
 continuing with an inferred state. An explicit `none` preprocessing/feature
 choice is a skipped stage, not an executable transformation.
+Task-goal aliases such as `classification_baseline` and
+`baseline_classification` normalize to `classification`; baseline routing must
+still execute split, preprocess, optional feature skip, and modeling stages when
+their parameters are already confirmed.
+
+When forwarding reader boundaries, distinguish source column names from
+positions. `--reader-spectral-start-column` and `--reader-spectral-end-column`
+name headers such as `3600` and `200`. If the user means zero-based positions,
+use `--reader-spectral-start-column-index` and
+`--reader-spectral-end-column-index` instead.
 
 ## Generic top-level route card
 
@@ -61,6 +71,13 @@ Show exactly these seven routes:
 
 Do not collapse routes 5-7 into ordinary model selection. Deep routes carry
 their own training protocol, device, random-seed, budget, and risk gates.
+
+For route 1 baselines, use `--task-goal classification` or
+`--task-goal classification_baseline`, plus `--require-test-confirmation` unless
+the user has already explicitly approved final test access. The workflow should
+run modeling in `validation_only` mode first, write validation artifacts and
+`workflow_result.json`, then ask for one explicit final-test confirmation. After
+confirmation, rerun the same locked workflow with `--confirm-test-evaluation`.
 
 ## Stage confirmation cards
 

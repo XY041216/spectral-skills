@@ -12,7 +12,7 @@ from spectral_core.reader.io_utils import load_json_file, write_json_file
 from spectral_core.reader.response import error_response, ok_response
 from spectral_core.feature.parameter_policy import missing_critical_parameters, normalize_feature_method
 from spectral_core.workflow.run_layout import create_run_layout, ensure_run_dirs, relative_stage_outputs, update_runs_index, write_run_manifest
-from spectral_core.workflow.state import create_workflow_plan, update_workflow_result
+from spectral_core.workflow.state import create_workflow_plan, normalize_workflow_goal, update_workflow_result
 
 
 SPLIT_PREPARATION_GOALS = {"split", "prepare_for_optimizer", "compare_preprocess"}
@@ -131,7 +131,7 @@ def run_spectral_workflow(
                 required_fields=["split_ratio"],
                 confirmation_required=[ratio_confirmation],
             )
-        goal = _normalize_goal(task_goal)
+        goal = normalize_workflow_goal(task_goal)
         layout = create_run_layout(
             output_root=output_root,
             output_dir=output_dir,
@@ -578,6 +578,7 @@ def run_spectral_workflow(
                     or ("workflow_auto_repeated_classifier_comparison" if selected_modeling_mode == "repeated_classifier_comparison" else None)
                 ),
                 auto_confirm_model_defaults=auto_confirm_model_defaults,
+                evaluation_mode=("validation_only" if require_test_confirmation and not confirm_test_evaluation else "final"),
                 require_test_confirmation=require_test_confirmation,
                 confirm_test_evaluation=confirm_test_evaluation,
                 confirm_confirmatory_test_evaluation=confirm_confirmatory_test_evaluation,
@@ -590,6 +591,8 @@ def run_spectral_workflow(
                 return blocked
             final_output = _modeling_final_output(model_dir)
             stage_outputs["modeling"] = str(final_output)
+            if require_test_confirmation and not confirm_test_evaluation:
+                return _write_test_confirmation(layout, selected_task, stage_outputs, str(final_output), warnings, backend)
             return _write_and_return(layout, selected_task, stage_outputs, str(final_output), warnings, backend)
 
         return _blocked("WORKFLOW_GOAL_UNSUPPORTED", "Unsupported workflow goal.", backend, task_goal=task_goal)
@@ -618,6 +621,44 @@ def _write_and_return(layout: Any, task_goal: str, stage_outputs: dict[str, str]
     write_run_manifest(layout, task_goal=task_goal, status=result["workflow_status"], parameters={"final_output": final_output})
     update_runs_index(layout, task_goal=task_goal, status=result["workflow_status"], stage_outputs=stage_outputs, final_output=final_output)
     return ok_response("run_spectral_workflow", result, backend=backend, warnings=warnings)
+
+
+def _write_test_confirmation(layout: Any, task_goal: str, stage_outputs: dict[str, str], final_output: str, warnings: list[dict[str, Any]], backend: str) -> dict[str, Any]:
+    root = layout.run_dir
+    confirmation_required = [
+        {
+            "field": "test_evaluation",
+            "reason": "Validation-only model selection is complete; the isolated test split requires explicit final-evaluation confirmation.",
+            "options": ["rerun the same workflow with --confirm-test-evaluation"],
+        }
+    ]
+    result = update_workflow_result(
+        result_path=root / "workflow_result.json",
+        task_goal=task_goal,
+        stage_outputs=stage_outputs,
+        stage_outputs_relative=relative_stage_outputs(stage_outputs, root),
+        final_output=final_output,
+        final_output_relative=relative_stage_outputs({"final": final_output}, root).get("final", final_output),
+        workflow_plan=str(root / "workflow_plan.json") if (root / "workflow_plan.json").exists() else None,
+        workflow_status="needs_confirmation",
+        confirmation_required=confirmation_required,
+        run_id=layout.run_id,
+        dataset_name=layout.dataset_name,
+        run_dir=str(root.resolve()),
+        output_root=str(layout.output_root.resolve()) if layout.output_root else None,
+        warnings=warnings,
+    )
+    result["status"] = "needs_confirmation"
+    write_run_manifest(layout, task_goal=task_goal, status="needs_confirmation", parameters={"final_output": final_output, "test_accessed": False})
+    update_runs_index(layout, task_goal=task_goal, status="needs_confirmation", stage_outputs=stage_outputs, final_output=final_output)
+    return error_response(
+        "run_spectral_workflow",
+        "Validation selection is complete. Confirm before accessing the isolated test split.",
+        backend=backend,
+        code="TEST_EVALUATION_CONFIRMATION_REQUIRED",
+        result=result,
+        warnings=warnings,
+    )
 
 
 def _write_workflow_plan(
@@ -747,8 +788,8 @@ def _call_reader(
     _add_optional(args, "--target-columns", _join_csv(target_columns))
     _add_optional(args, "--sample-id-column", sample_id_column)
     _add_optional(args, "--sample-id-column-index", sample_id_column_index)
-    _add_optional(args, "--spectral-start-column", spectral_start_column)
-    _add_optional(args, "--spectral-end-column", spectral_end_column)
+    _add_column_boundary(args, "--spectral-start-column", "--spectral-start-column-index", spectral_start_column)
+    _add_column_boundary(args, "--spectral-end-column", "--spectral-end-column-index", spectral_end_column)
     _add_optional(args, "--band-type", band_type)
     _add_optional(args, "--band-unit", band_unit)
     _add_optional(args, "--max-auto-columns", max_auto_columns)
@@ -1028,6 +1069,7 @@ def _call_modeling(
     checkpoint_per_model: bool,
     candidate_model_set_source: str | None,
     auto_confirm_model_defaults: bool,
+    evaluation_mode: str,
     require_test_confirmation: bool,
     confirm_test_evaluation: bool,
     confirm_confirmatory_test_evaluation: bool,
@@ -1052,6 +1094,7 @@ def _call_modeling(
             checkpoint_per_model=checkpoint_per_model,
             candidate_model_set_source=candidate_model_set_source,
             auto_confirm_model_defaults=auto_confirm_model_defaults,
+            evaluation_mode=evaluation_mode,
             require_test_confirmation=require_test_confirmation,
             confirm_test_evaluation=confirm_test_evaluation,
             confirm_confirmatory_test_evaluation=confirm_confirmatory_test_evaluation,
@@ -1094,6 +1137,7 @@ def _call_modeling(
         _add_optional(args, "--model-temperature", model_parameters.get("temperature"))
         _add_optional(args, "--model-device", model_parameters.get("device"))
     _add_flag(args, "--auto-confirm-model-defaults", auto_confirm_model_defaults)
+    _add_optional(args, "--evaluation-mode", evaluation_mode)
     _add_flag(args, "--disable-model-selection", modeling_mode == "repeated_classifier_comparison")
     _add_flag(args, "--checkpoint-per-model", checkpoint_per_model)
     _add_flag(args, "--require-test-confirmation", require_test_confirmation)
@@ -1183,6 +1227,15 @@ def _stage_script(stage: str) -> Path:
 def _add_optional(args: list[str], name: str, value: Any) -> None:
     if value is not None and value != "":
         args.extend([name, str(value)])
+
+
+def _add_column_boundary(args: list[str], column_name: str, index_name: str, value: Any) -> None:
+    if value is None or value == "":
+        return
+    if isinstance(value, int) and not isinstance(value, bool):
+        args.extend([index_name, str(value)])
+    else:
+        args.extend([column_name, str(value)])
 
 
 def _add_flag(args: list[str], name: str, enabled: bool) -> None:
@@ -1387,28 +1440,6 @@ def _qc_next_package(response: dict[str, Any], qc_result_path: Path) -> Path | N
     if (path / "data_contract.json").exists():
         return path
     return None
-
-
-def _normalize_goal(task_goal: str | None) -> str | None:
-    if task_goal is None or not str(task_goal).strip():
-        return None
-    text = str(task_goal).strip().lower().replace("-", "_").replace(" ", "_")
-    aliases = {
-        "read_only": "read",
-        "quality_check": "qc",
-        "check_quality": "qc",
-        "splitter": "split",
-        "splitting": "split",
-        "prepare_optimizer": "prepare_for_optimizer",
-        "optimizer_prepare": "prepare_for_optimizer",
-        "prepare_for_optimization": "prepare_for_optimizer",
-        "compare_preprocessing": "compare_preprocess",
-        "classify": "classification",
-        "classifier": "classification",
-        "regress": "regression",
-        "model": "modeling",
-    }
-    return aliases.get(text, text)
 
 
 def _task_type_for_reader(goal: str, task_type: str | None) -> str | None:
