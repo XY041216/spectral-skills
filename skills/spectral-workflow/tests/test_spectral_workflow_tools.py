@@ -1174,6 +1174,51 @@ def test_workflow_plan_repeated_split_does_not_require_holdout_ratio(tmp_path: P
     assert splitter["confirmation"]["required_fields"] == []
 
 
+def test_workflow_plan_repeated_split_parses_explicit_ratio(tmp_path: Path) -> None:
+    output_dir = tmp_path / "workflow_state_mccv_ratio"
+    create = subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "skills" / "spectral-workflow" / "scripts" / "create_workflow_plan.py"),
+            "--output-dir",
+            str(output_dir),
+            "--task-goal",
+            "classification",
+            "--package-dir",
+            "package",
+            "--split-method",
+            "stratified_monte_carlo_cv",
+            "--split-ratio",
+            "6:2:2",
+            "--n-repeats",
+            "10",
+            "--preprocess-methods",
+            "none",
+            "--feature-method",
+            "none",
+            "--models",
+            "svm",
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+    assert create.returncode == 0, create.stderr
+    plan = json.loads((output_dir / "workflow_plan.json").read_text(encoding="utf-8"))
+    splitter = next(item for item in plan["stages"] if item["stage"] == "splitter")
+    assert splitter["status"] == "execute"
+    assert splitter["parameters"]["split_type"] == "repeated_holdout"
+    assert splitter["parameters"]["ratio"] == "6:2:2"
+    assert splitter["parameters"]["n_repeats"] == 10
+    assert splitter["parameters"]["train_ratio"] == 0.6
+    assert splitter["parameters"]["val_ratio"] == 0.2
+    assert splitter["parameters"]["test_ratio"] == 0.2
+    assert splitter["confirmation"]["required_fields"] == []
+
+
 def test_reused_package_records_reader_and_qc_provenance(tmp_path: Path) -> None:
     previous = tmp_path / "previous_workflow"
     package_dir = _write_package(previous / "reader_package")

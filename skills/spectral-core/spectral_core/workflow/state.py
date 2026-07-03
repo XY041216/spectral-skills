@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from spectral_core.reader.io_utils import load_json_file, write_json_file
+from spectral_core.splitter.ratios import resolve_ratios
 
 
 WORKFLOW_PLAN_VERSION = "0.2.0"
@@ -501,17 +502,36 @@ def _split_parameters(
     elif split_type == "cross_validation":
         parameters.update({"n_splits": n_splits or 5, "shuffle": shuffle})
     elif split_type == "repeated_holdout":
+        parsed_ratio = _parse_split_ratio_for_plan(split_ratio)
         parameters.update(
             {
+                "ratio": split_ratio,
                 "n_repeats": n_repeats or 100,
-                "train_ratio": 0.7 if train_ratio is None else train_ratio,
-                "val_ratio": val_ratio,
-                "test_ratio": 0.3 if test_ratio is None else test_ratio,
+                "train_ratio": _choose_ratio_value(train_ratio, parsed_ratio, "train", 0.7),
+                "val_ratio": _choose_ratio_value(val_ratio, parsed_ratio, "val", None),
+                "test_ratio": _choose_ratio_value(test_ratio, parsed_ratio, "test", 0.3),
             }
         )
     elif split_type == "predefined":
         parameters.update({"ratio": split_ratio})
     return parameters
+
+
+def _parse_split_ratio_for_plan(split_ratio: str | None) -> dict[str, float] | None:
+    if not split_ratio:
+        return None
+    try:
+        return resolve_ratios(ratio=split_ratio)
+    except Exception:
+        return None
+
+
+def _choose_ratio_value(explicit: float | None, parsed: dict[str, float] | None, key: str, default: float | None) -> float | None:
+    if explicit is not None:
+        return explicit
+    if parsed is not None:
+        return parsed[key]
+    return default
 
 
 def _missing_split_fields(*, split_contract: str | Path | None, split_method: str | None, split_ratio: str | None) -> list[str]:

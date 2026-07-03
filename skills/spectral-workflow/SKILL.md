@@ -202,6 +202,29 @@ For small single-holdout results, recommend a locked 5- or 10-repeat stratified
 holdout confirmation. Near-perfect train accuracy plus lower validation/test is
 an overfitting signal, not proof that the tuner failed.
 
+For locked-parameter robustness after a single holdout result, first clarify the
+design name: `stratified_monte_carlo_cv` is repeated stratified holdout, not
+strict repeated K-fold CV. Preserve the original ratio when the user asks to
+confirm a `6:2:2` baseline; pass `--split-ratio 6:2:2` or explicit
+`--train-ratio 0.6 --val-ratio 0.2 --test-ratio 0.2`, not the repeated-holdout
+default `0.7/0.3`.
+
+Use workflow-level locked repeated confirmation when the selected model and
+parameters are already fixed. Write a compact model config such as:
+
+```json
+{"models":{"svm":{"C":1.0,"gamma":"scale","class_weight":null}}}
+```
+
+Then run the workflow with
+`--split-method stratified_monte_carlo_cv --split-ratio 6:2:2 --n-repeats 10
+--preprocess-methods snv --feature-method none --models svm --model-config
+<locked-model-config.json> --modeling-mode repeated_classifier_comparison
+--candidate-model-set-source locked_previous_svm
+--confirm-confirmatory-test-evaluation`. This route forwards
+`--disable-model-selection` to `spectral-modeling`; do not rerun internal
+hyperparameter search during confirmatory robustness analysis.
+
 ## Modeling completion handoff
 
 After `spectral-modeling` completes, read `metrics.json`,
