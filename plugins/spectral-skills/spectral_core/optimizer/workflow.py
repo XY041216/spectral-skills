@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from spectral_core.modeling.registry import comparison_fixed_parameters, model_spec, normalize_model_name
+from spectral_core.modeling.registry import MODEL_DEFAULTS, comparison_fixed_parameters, model_spec, normalize_model_name
 from spectral_core.optimizer.executor import OptimizerExecutionError, execute_validation_trials
 from spectral_core.optimizer.planner import budget_audit, build_trials as planner_build_trials
 from spectral_core.reader.response import error_response, ok_response
@@ -35,6 +35,16 @@ TIE_BREAKER_POLICY = [
     "then prefer unsupervised feature methods over supervised selectors",
     "then prefer lower-compute traditional models over experimental models",
 ]
+
+OPTIMIZER_EXPERIMENTAL_MODEL_OVERRIDES = {
+    "spectral_dkl_gp_classifier": {"embedding_dim": 16},
+    "spectral_dkl_gp_regressor": {"embedding_dim": 16},
+    "proto_spectral_classifier": {"embedding_dim": 16},
+    "proto_spectral_regressor": {"embedding_dim": 16},
+    "cls_former_classifier": {"feature_dim": 16},
+    "cls_former_embedding_svm": {"feature_dim": 16, "svm_C": 1.0, "svm_gamma": "scale"},
+    "cls_former_regressor": {"feature_dim": 16},
+}
 
 
 @dataclass
@@ -505,7 +515,12 @@ def _default_space(
             model_candidates=model_candidates,
             comparison_depth=comparison_depth,
         )
-    return _space_for_pipeline(task)
+    return _space_for_pipeline(
+        task,
+        preprocess_candidates=preprocess_candidates,
+        feature_candidates=feature_candidates,
+        model_candidates=model_candidates,
+    )
 
 
 def _space_for_tune(step: str, method: str, task: str) -> dict[str, Any]:
@@ -619,7 +634,13 @@ def _space_for_compare(
     raise OptimizerError("OPTIMIZER_COMPARE_STEP_UNSUPPORTED", "Unsupported compare_step target.", {"target_step": step})
 
 
-def _space_for_pipeline(task: str) -> dict[str, Any]:
+def _space_for_pipeline(
+    task: str,
+    *,
+    preprocess_candidates: str | list[str] | None = None,
+    feature_candidates: str | list[str] | None = None,
+    model_candidates: str | list[str] | None = None,
+) -> dict[str, Any]:
     models = (
         [
             {"method": "svm", "C": [1, 10], "gamma": ["scale"]},
@@ -629,16 +650,77 @@ def _space_for_pipeline(task: str) -> dict[str, Any]:
         if task == "classification"
         else [{"method": "plsr", "n_components": [5, 10]}, {"method": "svr", "C": [1, 10], "gamma": ["scale"]}]
     )
+    preprocess = [{"method": "none"}, {"method": "snv"}, {"method": "msc"}]
+    features = [
+        {"method": "none"},
+        {"method": "pca", "n_components": [10]},
+        {"method": "pls_latent_variables", "n_components": [3, 5, 10]},
+        {"method": "vip", "top_k": [30]},
+    ]
+    if preprocess_candidates:
+        preprocess = _dedupe_candidates([*preprocess, *_preprocess_candidate_dicts(preprocess_candidates)])
+    if feature_candidates:
+        features = _dedupe_candidates([*features, *_pipeline_feature_addon_dicts(feature_candidates)])
+    if model_candidates:
+        models = _dedupe_candidates([*models, *_model_candidate_dicts(model_candidates, task)])
     return {
-        "preprocess": [{"method": "none"}, {"method": "snv"}, {"method": "msc"}],
-        "feature": [
-            {"method": "none"},
-            {"method": "pca", "n_components": [10]},
-            {"method": "pls_latent_variables", "n_components": [3, 5, 10]},
-            {"method": "vip", "top_k": [30]},
-        ],
+        "preprocess": preprocess,
+        "feature": features,
         "modeling": models,
     }
+
+
+def _dedupe_candidates(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    for item in items:
+        key = json.dumps(item, sort_keys=True, ensure_ascii=True)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped
+
+
+def _pipeline_feature_addon_dicts(value: str | list[str]) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    for raw_method in _parse_list(value):
+        method = _normalize_feature_candidate(raw_method)
+        if method == "cls_former_embedding_svm":
+            method = "cls_former_embedding"
+        params: dict[str, Any] = {"method": method}
+        if method == "pca":
+            params["n_components"] = [10]
+        elif method == "pls_latent_variables":
+            params["n_components"] = [3, 5, 10]
+        elif method in {"vip", "select_k_best", "spa"}:
+            params["top_k"] = [30 if method == "vip" else 80]
+        elif method in {"cars", "uve", "mcuve"}:
+            params.update({"n_components": [5], "n_runs": [50], "top_k": [80], "sample_ratio": [0.8], "cv": [3], "random_state": 42})
+            if method == "cars":
+                params.pop("top_k", None)
+        elif method == "interval_pls":
+            params.update({"n_intervals": [20], "n_components": [5], "cv": [3]})
+        elif method == "autoencoder_embedding":
+            params.update({"n_components": [16], "epochs": 100, "batch_size": 16, "learning_rate": 0.001, "weight_decay": 1e-5, "random_state": 42, "device": "cpu"})
+        elif method == "denoising_autoencoder_embedding":
+            params.update({"n_components": [16], "epochs": 100, "batch_size": 16, "learning_rate": 0.001, "weight_decay": 1e-5, "noise_std": 0.03, "random_state": 42, "device": "cpu"})
+        elif method == "cnn_1d_embedding":
+            params.update({"n_components": [16], "epochs": 80, "batch_size": 16, "learning_rate": 0.001, "weight_decay": 1e-4, "random_state": 42, "device": "cpu"})
+        elif method == "resnet1d_embedding":
+            params.update({"n_components": [16], "epochs": 60, "batch_size": 16, "learning_rate": 0.001, "weight_decay": 1e-4, "random_state": 42, "device": "cpu"})
+        elif method == "cls_former_embedding":
+            params.update({"n_components": [16], "epochs": 80, "batch_size": 16, "learning_rate": 0.001, "weight_decay": 1e-4, "patch_size": 16, "random_state": 42, "device": "cpu"})
+        elif method == "masked_spectral_autoencoder_embedding":
+            params.update({"n_components": [16], "epochs": 100, "batch_size": 16, "learning_rate": 0.001, "weight_decay": 1e-4, "mask_ratio": 0.15, "patch_size": 16, "random_state": 42, "device": "cpu"})
+        elif method == "contrastive_spectral_embedding":
+            params.update({"n_components": [16], "epochs": 100, "batch_size": 16, "learning_rate": 0.001, "weight_decay": 1e-4, "noise_std": 0.03, "mask_ratio": 0.1, "temperature": 0.2, "random_state": 42, "device": "cpu"})
+        elif method == "self_supervised_spectral_embedding":
+            params.update({"n_components": [16], "epochs": 100, "batch_size": 16, "learning_rate": 0.001, "weight_decay": 1e-4, "noise_std": 0.03, "mask_ratio": 0.1, "temperature": 0.2, "random_state": 42, "device": "cpu"})
+        candidates.append(params)
+    if not candidates:
+        raise OptimizerError("OPTIMIZER_FEATURE_CANDIDATES_EMPTY", "feature_candidates did not contain any methods.", {})
+    return candidates
 
 
 def _load_candidate_space(value: str | Path | dict[str, Any]) -> dict[str, Any]:
@@ -655,7 +737,17 @@ def _parse_list(value: str | list[str] | None) -> list[str]:
 
 
 def _normalize_feature_candidate(method: str) -> str:
-    aliases = {"pls": "pls_latent_variables", "pls_lv": "pls_latent_variables", "kbest": "select_k_best", "skb": "select_k_best"}
+    aliases = {
+        "pls": "pls_latent_variables",
+        "pls_lv": "pls_latent_variables",
+        "kbest": "select_k_best",
+        "skb": "select_k_best",
+        "cls_former": "cls_former_embedding",
+        "clsformer": "cls_former_embedding",
+        "transformer": "cls_former_embedding",
+        "transformer_embedding": "cls_former_embedding",
+        "cls_former_embedding_svm": "cls_former_embedding",
+    }
     key = method.strip().lower().replace("-", "_")
     return aliases.get(key, key)
 
@@ -692,9 +784,21 @@ def _model_candidate_dicts(value: str | list[str] | None, task: str) -> list[dic
     candidates: list[dict[str, Any]] = []
     for method in methods:
         canonical = _normalize_model_candidate(method)
-        fixed = comparison_fixed_parameters(canonical)
+        fixed = _optimizer_fixed_model_parameters(canonical)
         candidates.append({"method": canonical, **{key: [value] for key, value in fixed.items()}})
     return candidates
+
+
+def _optimizer_fixed_model_parameters(method: str) -> dict[str, Any]:
+    canonical = _normalize_model_candidate(method)
+    fixed = comparison_fixed_parameters(canonical)
+    if fixed:
+        return fixed
+    defaults = dict(MODEL_DEFAULTS.get(canonical) or {})
+    if not defaults:
+        return {}
+    defaults.update(OPTIMIZER_EXPERIMENTAL_MODEL_OVERRIDES.get(canonical, {}))
+    return defaults
 
 
 def _locked_model_parameter_preflight(space: dict[str, Any]) -> dict[str, Any]:
@@ -702,7 +806,7 @@ def _locked_model_parameter_preflight(space: dict[str, Any]) -> dict[str, Any]:
     recommended: dict[str, dict[str, Any]] = {}
     for item in space.get("modeling") or []:
         method = _normalize_model_candidate(str(item.get("method") or ""))
-        policy = comparison_fixed_parameters(method)
+        policy = _optimizer_fixed_model_parameters(method)
         if not policy:
             continue
         absent = [key for key in policy if not _model_item_has_parameter(item, method, key)]

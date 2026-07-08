@@ -68,6 +68,7 @@ def execute_validation_trials(
             random_seed=random_seed,
             evaluation_mode="validation_only",
             disable_model_selection=True,
+            auto_confirm_model_defaults=True,
             save_model=False,
             overwrite=True,
             backend="optimizer",

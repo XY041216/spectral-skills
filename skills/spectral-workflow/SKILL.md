@@ -21,6 +21,38 @@ Start with `static/core/route-index.md` for the stage-owner map. Load only the
 active child skill and its method-selection fragment; do not load full menus for
 future stages.
 
+## Output Layout
+
+All files created for one user-facing spectral analysis must converge under one
+run directory. Prefer `spectral-workflow --output-root <base>/spectral_runs
+--run-name <run_id>` so the workflow writes:
+
+- `<output-root>/<dataset>/<run_id>/reader_package`
+- `<output-root>/<dataset>/<run_id>/qc_output`
+- `<output-root>/<dataset>/<run_id>/split_output`
+- `<output-root>/<dataset>/<run_id>/preprocess_output`
+- `<output-root>/<dataset>/<run_id>/feature_output`
+- `<output-root>/<dataset>/<run_id>/model_output`
+- `<output-root>/<dataset>/<run_id>/optimizer_output`
+- `<output-root>/<dataset>/<run_id>/report_output`
+- `<output-root>/<dataset>/<run_id>/logs`
+- `<output-root>/<dataset>/<run_id>/workflow_result.json`
+
+For a raw-file request such as "处理 <file>", do not write sibling folders such
+as `<stem>_standard_package`, `<stem>_qc`, `<stem>_split`, or
+`<stem>_optimizer_regular72`. Run the reader through `spectral-workflow
+--task-goal read` or, if invoking `spectral-reader` directly, set its
+`--output-dir` to the current run directory's `reader_package`. Every later
+check, split, preprocess, feature, modeling, optimizer, or report artifact for
+the same analysis must reuse that run directory and write to its stage
+subfolder. If the user continues from an older package that is already outside a
+run directory, create one new run directory and record the external package as
+`reused_from`, rather than scattering new sibling outputs next to the raw file.
+
+Final answers must show the run directory first, then stage outputs relative to
+that directory. Avoid presenting a list of unrelated sibling folders as the
+analysis result.
+
 1. Raw file/folder -> `spectral-reader`.
 2. Standard package -> validate `data_contract.json`; skip reader.
 3. Before split/model workflows -> check-only `spectral-check`, unless explicitly skipped.

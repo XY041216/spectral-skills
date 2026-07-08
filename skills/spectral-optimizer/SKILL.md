@@ -217,6 +217,22 @@ For self-developed/deep model add-ons, offer at least:
 - `cls_former_embedding_svm`;
 - custom: user-specified model list.
 
+When a user confirms any add-on for `optimize_pipeline`, insert it into the
+same three-axis candidate space before previewing or executing. Never run
+`regular` and the self-developed/deep candidates as separate optimizer jobs.
+Deep feature add-ons belong on the `feature` axis and must be crossed with
+every confirmed preprocessing method and downstream model. Self-developed/deep
+model add-ons belong on the `modeling` axis and must be crossed with every
+confirmed preprocessing and feature method. Example: regular classification
+space is `3 preprocess * 6 expanded feature choices * 4 expanded model choices
+= 72` trials. Adding `cls_former_classifier`, `proto_spectral_classifier`, and
+`spectral_dkl_gp_classifier` changes the unified space to `3 * 6 * 7 = 126`
+trials, not `72 + 3`. Adding `cls_former_embedding` as a feature add-on changes
+the unified space to `3 * 7 * 4 = 84` trials unless the user also prunes or
+changes the downstream model axis. The output must be one optimizer directory
+with one `candidate_space.json`, one `trial_manifest.csv`, one
+`trial_results.csv`, and one `best_pipeline.json`.
+
 The card must also offer `全量运行所有支持方法（传统 + 自创/深度）` as a separate
 high-budget option. This is different from `全量支持方法选优预览`: preview shows
 the universe and trial count, while full run requires explicit high-budget
@@ -302,7 +318,15 @@ when train accuracy is near 1.0.
 
 ## Output Boundary
 
-Write optimizer outputs only:
+Write optimizer outputs only, and place them under the current workflow run
+directory when the optimizer is part of a broader analysis. Use
+`<run_dir>/optimizer_output` for optimizer artifacts; per-trial intermediates
+must remain below `<run_dir>/optimizer_output/trials/<trial_id>/...`. Do not
+create sibling folders beside the raw file or reader package such as
+`<stem>_optimizer_regular72`, `<stem>_opt_experimental3`, or separate deep
+model output directories for one comparison.
+
+The optimizer output directory may contain only:
 
 - `optimizer_contract.json`
 - `optimization_plan.json`

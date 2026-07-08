@@ -354,6 +354,36 @@ def test_run_workflow_cli_accepts_reader_wide_table_aliases(tmp_path: Path) -> N
     assert (output_dir / "reader_package" / "data_contract.json").exists()
 
 
+def test_generic_raw_read_uses_single_managed_run_root(tmp_path: Path) -> None:
+    raw = _write_raw_classification(tmp_path / "Tablet_ext_0-3.csv")
+    output_root = tmp_path / "spectral_runs"
+    run_name = "initial_read"
+
+    response = run_spectral_workflow(
+        input_path=raw,
+        output_root=output_root,
+        run_name=run_name,
+        task_goal="read",
+        overwrite=True,
+        stage_runner=_fake_stage_runner(output_root),
+    )
+
+    assert response["ok"] is True
+    result = response["result"]
+    run_dir = output_root / "Tablet_ext_0-3" / run_name
+    assert Path(result["run_dir"]) == run_dir.resolve()
+    assert result["stage_outputs_relative"] == {"reader": "reader_package/data_contract.json"}
+    assert result["final_output_relative"] == "reader_package/data_contract.json"
+    assert (run_dir / "reader_package" / "data_contract.json").exists()
+    assert (run_dir / "qc_output").is_dir()
+    assert (run_dir / "split_output").is_dir()
+    assert (run_dir / "optimizer_output").is_dir()
+    assert (run_dir / "workflow_result.json").exists()
+    assert (output_root / "Tablet_ext_0-3" / "runs_index.csv").exists()
+    assert not (tmp_path / "Tablet_ext_0-3_standard_package").exists()
+    assert not (tmp_path / "Tablet_ext_0-3_qc").exists()
+
+
 def test_package_qc_splitter_modeling_workflow(tmp_path: Path) -> None:
     package_dir = _write_package(tmp_path / "package")
     output_dir = tmp_path / "workflow"
