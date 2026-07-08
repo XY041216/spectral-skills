@@ -21,7 +21,7 @@ SOURCE_SKILLS = REPO_ROOT / "skills"
 SOURCE_RUNTIME = REPO_ROOT / "spectral_core"
 SKILL_NAMES = (
     "spectral-reader",
-    "spectral-qc",
+    "spectral-check",
     "spectral-splitter",
     "spectral-preprocess",
     "spectral-feature",
