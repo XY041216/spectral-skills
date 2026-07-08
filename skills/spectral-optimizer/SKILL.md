@@ -33,6 +33,21 @@ skills.
   methods `pca`, `pls_latent_variables`, `vip`, `select_k_best`, `spa`.
 - `optimize_pipeline`: search multiple stages under a confirmed trial budget.
 
+User intent routing is strict:
+
+- `自动选优组合`, `自动组合选优`, `组合选优`, `pipeline optimization`, or "best
+  preprocessing + feature + model combination" means `optimize_pipeline`, not
+  `compare_step`.
+- For this intent, the default recommendation is the regular 72-trial pipeline
+  preview: preprocess `none/snv/msc`; feature
+  `none`, `pca(n_components=10)`, `pls_latent_variables(n_components=3,5,10)`,
+  `vip(top_k=30)`; models `svm(C=1,10,gamma=scale)`, `linear_svm(C=1)`,
+  `pls_da(n_components=5)`; selection metric `val_macro_f1`.
+- Do not answer an automatic combination request with only "SNV + feature
+  comparison + fixed SVM" or a 22-trial feature comparison. That is a
+  `compare_step` route and must be used only when the user explicitly asks
+  "which feature method is best" or fixes preprocess/model stages.
+
 Use the deterministic entry:
 
 ```bash
@@ -123,6 +138,103 @@ grid or repeated-holdout follow-up. `recommended` remains an alias for
 `regular`. Use `deep` only after explicit Level 3 confirmation; its raw
 embedding/classifier grid may exceed 300 trials and must be previewed and
 pruned before execution.
+
+For any optimization comparison, do not describe the default as "conventional
+optimization comparison." Describe it as the recommended regular comparison,
+then explicitly list excluded but supported built-in self-developed
+small-sample/deep candidates: DKL-GP, prototype spectral models, CLS-former
+models, CLS-former embedding + SVM, and feature-stage deep embeddings with
+confirmed downstream classifiers.
+
+If the user asks for all supported methods, full search, 全量支持方法选优, or
+exhaustive comparison, do not collapse the request to the regular compact space.
+Use an `all-supported-preview` route: enumerate all implemented preprocess,
+feature, model, optional boosting, self-developed, and deep candidate groups,
+estimate expanded trials, mark unavailable optional dependencies and
+visualization-only methods, then ask the user to prune or confirm a high-budget
+run before execution.
+
+Every optimizer recommendation must compute and show data-profile flags:
+`small_sample`, `high_dimensional`, `very_high_dimensional`, and
+`class_imbalance`. For small-sample high-dimensional profiles such as
+`n=120, p=3401`, recommend regular first as the stability baseline and offer
+representative self-developed/deep add-ons such as `cls_former_embedding_svm`
+or `contrastive_spectral_embedding + linear_svm/svm` before a full deep or
+all-supported search.
+
+The confirmation card is incomplete unless it contains a section named
+`内置自创/深度候选是否加入选优组合` and explicitly asks:
+`我们推荐先跑 regular 组合；同时 skill 内置自创小样本特征提取/表示学习和深度学习方法，是否加入到本轮组合选优？`
+List candidate codes item by item, including `contrastive_spectral_embedding`,
+`masked_spectral_autoencoder_embedding`, `self_supervised_spectral_embedding`,
+`autoencoder_embedding`, `transformer_embedding`, `cls_former_embedding`,
+`cnn_1d_embedding`, `resnet1d_embedding`,
+`spectral_dkl_gp_classifier/regressor`, `proto_spectral_classifier/regressor`,
+`cls_former_classifier/regressor`, and `cls_former_embedding_svm`.
+
+Do not present these as a code-only list. Group and explain them:
+
+- self-developed small-sample models: CLS-former classifier/regressor
+  (`cls_former_classifier/regressor`), prototype spectral
+  classifier/regressor (`proto_spectral_classifier/regressor`), and DKL-GP
+  (`spectral_dkl_gp_classifier/regressor`);
+- self-developed/deep feature extraction or representation learning:
+  `cls_former_embedding`, `contrastive_spectral_embedding`,
+  `masked_spectral_autoencoder_embedding`, `self_supervised_spectral_embedding`,
+  `autoencoder_embedding`, `transformer_embedding`, `cnn_1d_embedding`, and
+  `resnet1d_embedding`;
+- bridge option: CLS-former embedding + SVM (`cls_former_embedding_svm`).
+
+For each group, state the intended use and risk in plain Chinese: small-sample
+or nonlinear spectral modeling, uncertainty-aware modeling, train-fitted deep
+representations, extra epochs/device/early-stopping confirmation, and higher
+overfitting risk on small high-dimensional datasets. For profiles like
+`n=120, p=3401`, recommend regular first as the stability baseline and offer to
+add only 1-2 representative self-developed/deep candidates unless the user asks
+for a full deep search.
+
+Second-stage candidate selection is mandatory. If the user replies only
+`regular + 加 1-2 个深度特征候选`, `regular + 加 1-2 个自创/深度模型候选`, `B`, or
+`C`, do not choose candidates for the user and do not execute trials. Return a
+candidate-selection card with checkboxes/options and wait for exact method
+confirmation.
+
+For deep feature add-ons, offer at least:
+
+- `cls_former_embedding_svm`: CLS-former embedding + SVM, recommended
+  representative self-developed bridge for small high-dimensional spectra;
+- `contrastive_spectral_embedding + linear_svm/svm`: contrastive spectral
+  embedding plus confirmed downstream classifier;
+- `masked_spectral_autoencoder_embedding + linear_svm/svm`;
+- `autoencoder_embedding + linear_svm/svm`;
+- custom: user-specified deep feature plus downstream classifier.
+
+For self-developed/deep model add-ons, offer at least:
+
+- `cls_former_classifier`;
+- `proto_spectral_classifier`;
+- `spectral_dkl_gp_classifier`;
+- `cls_former_embedding_svm`;
+- custom: user-specified model list.
+
+The card must also offer `全量运行所有支持方法（传统 + 自创/深度）` as a separate
+high-budget option. This is different from `全量支持方法选优预览`: preview shows
+the universe and trial count, while full run requires explicit high-budget
+confirmation, dependency availability, pruning policy, metric, split/repeats,
+device, and deep-training parameters.
+
+Dependency rule: do not install PyTorch, XGBoost, LightGBM, CatBoost, UMAP, or
+any optional dependency merely because the user selected a deep/full option.
+If dependencies are missing or fail to import, stop at `needs_confirmation` or
+`blocked`, list unavailable candidates, and ask whether to install dependencies,
+skip unavailable methods, or run only executable traditional candidates. Never
+write deep configs or launch regular trials as a substitute for the missing
+candidate confirmation.
+
+End with choices: A `仅 regular 推荐组合`, B `regular + 选择的自创/深度特征`,
+C `regular + 选择的自创/深度模型`, D `先预览 extended/deep 方案再确认`. Do not ask
+only for `确认 regular 72`; that is an incomplete confirmation and must remain
+`needs_confirmation`.
 
 ## Leakage Rule
 

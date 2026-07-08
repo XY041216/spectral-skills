@@ -1,6 +1,6 @@
 # Standard Package Input
 
-Read only a `spectral-reader` or `spectral-qc` standard package.
+Read only a `spectral-reader` or `spectral-check` standard package.
 
 Required files:
 

@@ -9,9 +9,7 @@ from pathlib import Path
 
 def _find_runtime_root() -> Path:
     here = Path(__file__).resolve()
-    candidates: list[Path] = []
-    for parent in here.parents:
-        candidates.append(parent)
+    candidates = list(here.parents) + [parent / "spectral-core" for parent in here.parents]
     for candidate in candidates:
         if (candidate / "spectral_core" / "__init__.py").is_file():
             return candidate
@@ -76,8 +74,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--header-rows")
     parser.add_argument("--data-start-row", type=int)
     parser.add_argument("--data-end-row", type=int)
-    parser.add_argument("--spectral-start-column")
-    parser.add_argument("--spectral-end-column")
+    parser.add_argument("--spectral-start-column", help="First spectral column name. Numeric text is treated as a header value, not a position.")
+    parser.add_argument("--spectral-end-column", help="Last spectral column name. Numeric text is treated as a header value, not a position.")
+    parser.add_argument("--spectral-start-column-index", type=int, help="Zero-based position of the first spectral column.")
+    parser.add_argument("--spectral-end-column-index", type=int, help="Zero-based position of the last spectral column.")
     parser.add_argument("--band-axis-file")
     parser.add_argument("--band-unit")
     parser.add_argument("--band-type")
@@ -93,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument("--strict", action="store_true")
     args = parser.parse_args(argv)
+    _reject_mixed_spectral_boundaries(parser, args)
     response = read_spectral_dataset(
         input_path=args.input,
         output_dir=args.output_dir,
@@ -141,8 +142,8 @@ def main(argv: list[str] | None = None) -> int:
         header_rows=_split_int_arg(args.header_rows),
         data_start_row=args.data_start_row,
         data_end_row=args.data_end_row,
-        spectral_start_column=args.spectral_start_column,
-        spectral_end_column=args.spectral_end_column,
+        spectral_start_column=args.spectral_start_column_index if args.spectral_start_column_index is not None else args.spectral_start_column,
+        spectral_end_column=args.spectral_end_column_index if args.spectral_end_column_index is not None else args.spectral_end_column,
         band_axis_file=args.band_axis_file,
         band_unit=args.band_unit,
         band_type=args.band_type,
@@ -166,6 +167,13 @@ def _split_csv_arg(value: str | None) -> list[str] | None:
     if value is None:
         return None
     return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _reject_mixed_spectral_boundaries(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    if args.spectral_start_column is not None and args.spectral_start_column_index is not None:
+        parser.error("Use either --spectral-start-column or --spectral-start-column-index, not both.")
+    if args.spectral_end_column is not None and args.spectral_end_column_index is not None:
+        parser.error("Use either --spectral-end-column or --spectral-end-column-index, not both.")
 
 
 def _parse_column_arg(value: str | None) -> str | int | None:

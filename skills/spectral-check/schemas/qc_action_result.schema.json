@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.spectral-skills.local/spectral-check/qc_action_result.schema.json",
+  "title": "Spectral Check Action Result",
+  "type": "object",
+  "required": ["status"],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ready", "needs_confirmation", "blocked"]
+    },
+    "reason": { "type": "string" },
+    "required_fields": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "suggested_arguments": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "output_dir": { "type": "string" },
+    "standard_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    }
+  },
+  "additionalProperties": true
+}

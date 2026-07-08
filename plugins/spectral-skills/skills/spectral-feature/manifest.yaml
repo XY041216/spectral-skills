@@ -1,5 +1,5 @@
 name: spectral-feature
-version: 0.1.0-beta.2
+version: 0.1.0-beta.1
 description: Leakage-safe feature engineering and dimensionality reduction for split standard spectral data packages.
 skill_type: feature engineering
 

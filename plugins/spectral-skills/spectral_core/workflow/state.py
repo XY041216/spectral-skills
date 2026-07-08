@@ -11,12 +11,39 @@ from pathlib import Path
 from typing import Any
 
 from spectral_core.reader.io_utils import load_json_file, write_json_file
+from spectral_core.splitter.ratios import resolve_ratios
 
 
 WORKFLOW_PLAN_VERSION = "0.2.0"
 STAGE_ORDER = ["reader", "qc", "splitter", "preprocess", "feature", "modeling"]
 WORKFLOW_LOCK_TIMEOUT_SECONDS = 30.0
 WORKFLOW_LOCK_POLL_SECONDS = 0.05
+
+
+def normalize_workflow_goal(task_goal: str | None) -> str | None:
+    if task_goal is None or not str(task_goal).strip():
+        return None
+    text = str(task_goal).strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "read_only": "read",
+        "quality_check": "qc",
+        "check_quality": "qc",
+        "splitter": "split",
+        "splitting": "split",
+        "prepare_optimizer": "prepare_for_optimizer",
+        "optimizer_prepare": "prepare_for_optimizer",
+        "prepare_for_optimization": "prepare_for_optimizer",
+        "compare_preprocessing": "compare_preprocess",
+        "classify": "classification",
+        "classifier": "classification",
+        "classification_baseline": "classification",
+        "baseline_classification": "classification",
+        "regress": "regression",
+        "regression_baseline": "regression",
+        "baseline_regression": "regression",
+        "model": "modeling",
+    }
+    return aliases.get(text, text)
 
 
 def create_workflow_plan(
@@ -44,6 +71,7 @@ def create_workflow_plan(
     models: str | list[str] | None = None,
     random_seed: int = 42,
 ) -> dict[str, Any]:
+    task_goal = normalize_workflow_goal(task_goal)
     root = Path(output_dir)
     root.mkdir(parents=True, exist_ok=True)
     modeling_goal = task_goal in {"classification", "regression", "modeling"}
@@ -227,6 +255,7 @@ def update_workflow_result(
     final_output_relative: str | None = None,
     workflow_plan: str | None = None,
     workflow_status: str = "ready",
+    confirmation_required: list[dict[str, Any]] | None = None,
     warnings: list[dict[str, Any]] | None = None,
     run_id: str | None = None,
     dataset_name: str | None = None,
@@ -252,6 +281,7 @@ def update_workflow_result(
             "final_output_relative": final_output_relative or existing.get("final_output_relative"),
             "workflow_plan": workflow_plan or existing.get("workflow_plan"),
             "handoff_ready": workflow_status == "ready",
+            "confirmation_required": confirmation_required if confirmation_required is not None else existing.get("confirmation_required", []),
             "warnings": warnings if warnings is not None else existing.get("warnings", []),
             "execution": {"updated_at": datetime.now(timezone.utc).isoformat()},
         }
@@ -472,17 +502,36 @@ def _split_parameters(
     elif split_type == "cross_validation":
         parameters.update({"n_splits": n_splits or 5, "shuffle": shuffle})
     elif split_type == "repeated_holdout":
+        parsed_ratio = _parse_split_ratio_for_plan(split_ratio)
         parameters.update(
             {
+                "ratio": split_ratio,
                 "n_repeats": n_repeats or 100,
-                "train_ratio": 0.7 if train_ratio is None else train_ratio,
-                "val_ratio": val_ratio,
-                "test_ratio": 0.3 if test_ratio is None else test_ratio,
+                "train_ratio": _choose_ratio_value(train_ratio, parsed_ratio, "train", 0.7),
+                "val_ratio": _choose_ratio_value(val_ratio, parsed_ratio, "val", None),
+                "test_ratio": _choose_ratio_value(test_ratio, parsed_ratio, "test", 0.3),
             }
         )
     elif split_type == "predefined":
         parameters.update({"ratio": split_ratio})
     return parameters
+
+
+def _parse_split_ratio_for_plan(split_ratio: str | None) -> dict[str, float] | None:
+    if not split_ratio:
+        return None
+    try:
+        return resolve_ratios(ratio=split_ratio)
+    except Exception:
+        return None
+
+
+def _choose_ratio_value(explicit: float | None, parsed: dict[str, float] | None, key: str, default: float | None) -> float | None:
+    if explicit is not None:
+        return explicit
+    if parsed is not None:
+        return parsed[key]
+    return default
 
 
 def _missing_split_fields(*, split_contract: str | Path | None, split_method: str | None, split_ratio: str | None) -> list[str]:

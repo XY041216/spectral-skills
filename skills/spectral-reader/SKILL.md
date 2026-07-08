@@ -14,8 +14,34 @@ description: >-
 `spectral-reader` has one job: read user spectral data into standard data files
 that downstream skills can use directly.
 
-It is the entry point before `spectral-qc`, `spectral-splitter`,
+It is the entry point before `spectral-check`, `spectral-splitter`,
 `spectral-preprocess`, `spectral-feature`, and `spectral-modeling`.
+
+## Reader Completion Route Card
+
+When the user gives a generic request such as `处理 <raw spectral file>` and this
+skill converts the file into a standard package, the final user-facing answer
+must not stop at "package ready". Append a compact next-step route card headed
+`下一步可以选一个路线继续`.
+
+Use this exact route intent. The route card is incomplete if it omits any of
+these nine route labels; do not shorten it to only baseline/manual/automatic/
+visualization routes:
+
+- `推荐基线`: 质量检查 -> 分层 6:2:2 -> 数据画像推荐的预处理 -> 常规模型基线。
+- `只读取和质量检查`: run `spectral-check` only; do not split or model.
+- `逐步手动选择方法`: choose split, preprocess, feature, and model stage by stage.
+- `自动选优组合`: compare preprocessing + feature + model combinations, not a single fixed-SNV feature comparison.
+- `小型自创/深度候选加入`: add 1-2 representative built-in self-developed/deep candidates.
+- `全量支持方法选优预览`: preview all supported implemented method families and trial count before pruning.
+- `小样本/深度模型实验`: confirm CLS-former, prototype spectral model, DKL-GP, or other experimental model protocol.
+- `深度嵌入 + 传统模型比较`: train confirmed deep embeddings, then compare downstream classifiers/regressors.
+- `可视化探索`: PCA/t-SNE/UMAP/deep 2D embedding for exploration only.
+
+Show a one-line data profile before the routes, for example:
+`数据画像: n=120, p=3401, p/n≈28, 4-class classification; small-sample high-dimensional`.
+Use `check` or `质量检查` in user-facing text; do not write `QC` except in literal
+legacy file/API names such as `qc_result.json`.
 
 ## Activation Boundary
 
@@ -84,6 +110,14 @@ and final `class`/`label`/`target` columns should be auto-recognized. Use
 explicit `--spectral-start-column`, `--spectral-end-column`,
 `--sample-id-column-index`, and `--confirm-read-plan` only as a reproducibility
 or fallback path when automatic inference is not sufficient.
+`--spectral-start-column` and `--spectral-end-column` name source columns or
+headers; numeric text such as `3600` or `200` means the actual numeric band
+header, not a zero-based position. When the user means positional boundaries,
+use `--spectral-start-column-index` and `--spectral-end-column-index`. For a
+wide table with a sample-id column at index 0 and spectral features at indexes
+1..3401, use `--spectral-start-column-index 1 --spectral-end-column-index
+3401` or rely on automatic detection; do not pass `--spectral-end-column 3401`
+unless a source header literally named `3401` is intended.
 
 Internal read settings may exist while reading, but they are not a user-facing
 workflow and must not be treated as a development process.
@@ -126,7 +160,9 @@ Block instead of writing a pseudo-ready package when structural alignment fails.
 Block instead of writing a ready package when post-read audit shows suspicious
 feature loss, for example a CSV with thousands of numeric wavenumber columns
 but an X matrix with only tens of features. Recommend explicit
-`spectral_start_column` and `spectral_end_column` rather than continuing.
+`spectral_start_column_index` and `spectral_end_column_index` for positional
+ranges, or explicit `spectral_start_column` and `spectral_end_column` only when
+the boundary values are literal source headers.
 
 ## Execution Boundary
 
@@ -148,7 +184,7 @@ Before returning ready output, assert:
   band_axis length mismatch, or invalid numeric band-axis order.
 
 Missing spectral values may remain in `X.csv`. Imputation, deletion, duplicate
-spectra decisions, and outlier handling belong to `spectral-qc`.
+spectra decisions, and outlier handling belong to `spectral-check`.
 
 ## Output Boundary
 
@@ -235,5 +271,5 @@ Not in scope:
 - Use `static/fragments/complex-table-layout.md` for multirow headers or partitioned tables.
 - Use `static/fragments/numeric-band-columns.md`, `wavelength-columns.md`, and `wavenumber-columns.md` for band-axis recognition.
 - Use `static/fragments/chinese-column-names.md` for Chinese sample, label, target, metadata, and band column names.
-- Use `static/fragments/missing-values.md`, `static/fragments/sample-id-rules.md`, and `static/fragments/reader-qc-boundary.md` for missing values, sample IDs, and reader/QC boundaries.
+- Use `static/fragments/missing-values.md`, `static/fragments/sample-id-rules.md`, and `static/fragments/reader-check-boundary.md` for missing values, sample IDs, and reader/QC boundaries.
 - Use `references/*-cases.md` only for concrete scenario examples after selecting the relevant fragment.

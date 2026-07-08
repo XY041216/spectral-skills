@@ -3,7 +3,7 @@ name: spectral-preprocess
 description: >-
   Use when Codex needs to apply leakage-safe spectral preprocessing to an
   already split standard spectral data package from spectral-reader or
-  spectral-qc plus split_contract.json from spectral-splitter. Methods that
+  spectral-check plus split_contract.json from spectral-splitter. Methods that
   learn global parameters are fit on train samples only; per-sample methods
   such as SNV do not fit train-set statistics. For cross-validation or
   repeated-holdout contracts, train-fit methods are refit per fold/repeat. It
@@ -127,38 +127,10 @@ Supported methods are `none`, `snv`, `msc`, `detrend`, `snv_detrend`,
 
 When asking the user to choose or confirm preprocessing, show the full
 supported preprocessing menu in bilingual form. Every entry must include the
-executable method code using `中文名称（method_code / English name）`:
+executable method code using `涓枃鍚嶇О锛坢ethod_code / English name锛塦:
 show the full supported preprocessing menu in bilingual form.
 
-- 无预处理（none / no preprocessing）
-- 标准正态变量校正（snv / Standard Normal Variate, SNV）
-- 多元散射校正（msc / Multiplicative Scatter Correction, MSC）
-- 去趋势（detrend / detrending）
-- SNV + 去趋势（snv_detrend / SNV plus detrending）
-- Savitzky-Golay 平滑（sg_smoothing / Savitzky-Golay smoothing）
-- 一阶导数（first_derivative / first derivative）
-- 二阶导数（second_derivative / second derivative）
-- 移动平均平滑（moving_average / moving average smoothing）
-- 高斯平滑（gaussian_smoothing / Gaussian smoothing）
-- 中值滤波（median_filter / median filter）
-- 线性基线校正（linear_baseline / linear baseline correction）
-- 多项式基线校正（polynomial_baseline / polynomial baseline correction）
-- 橡皮筋基线校正（rubberband_baseline / rubberband baseline correction）
-- 非对称最小二乘基线校正（als_baseline / asymmetric least squares baseline correction）
-- 均值中心化（mean_centering / mean centering）
-- 标准化（standardization / standardization）
-- 最小-最大缩放（minmax_scaling / min-max scaling）
-- 鲁棒缩放（robust_scaling / robust scaling）
-- Pareto 缩放（pareto_scaling / Pareto scaling）
-- L2 归一化（l2_normalization / L2 normalization）
-- 面积归一化（area_normalization / area normalization）
-- 最大绝对值归一化（max_abs_normalization / max-absolute normalization）
-- 反射率转吸光度（reflectance_to_absorbance / reflectance to absorbance）
-- 透射率转吸光度（transmittance_to_absorbance / transmittance to absorbance）
-- 对数变换（log_transform / log transform）
-- 保留物理波段范围（band_range_select / band range selection）
-- 移除物理波段范围（remove_band_ranges / remove band ranges）
-
+- 鏃犻澶勭悊锛坣one / no preprocessing锛?- 鏍囧噯姝ｆ€佸彉閲忔牎姝ｏ紙snv / Standard Normal Variate, SNV锛?- 澶氬厓鏁ｅ皠鏍℃锛坢sc / Multiplicative Scatter Correction, MSC锛?- 鍘昏秼鍔匡紙detrend / detrending锛?- SNV + 鍘昏秼鍔匡紙snv_detrend / SNV plus detrending锛?- Savitzky-Golay 骞虫粦锛坰g_smoothing / Savitzky-Golay smoothing锛?- 涓€闃跺鏁帮紙first_derivative / first derivative锛?- 浜岄樁瀵兼暟锛坰econd_derivative / second derivative锛?- 绉诲姩骞冲潎骞虫粦锛坢oving_average / moving average smoothing锛?- 楂樻柉骞虫粦锛坓aussian_smoothing / Gaussian smoothing锛?- 涓€兼护娉紙median_filter / median filter锛?- 绾挎€у熀绾挎牎姝ｏ紙linear_baseline / linear baseline correction锛?- 澶氶」寮忓熀绾挎牎姝ｏ紙polynomial_baseline / polynomial baseline correction锛?- 姗＄毊绛嬪熀绾挎牎姝ｏ紙rubberband_baseline / rubberband baseline correction锛?- 闈炲绉版渶灏忎簩涔樺熀绾挎牎姝ｏ紙als_baseline / asymmetric least squares baseline correction锛?- 鍧囧€间腑蹇冨寲锛坢ean_centering / mean centering锛?- 鏍囧噯鍖栵紙standardization / standardization锛?- 鏈€灏?鏈€澶х缉鏀撅紙minmax_scaling / min-max scaling锛?- 椴佹缂╂斁锛坮obust_scaling / robust scaling锛?- Pareto 缂╂斁锛坧areto_scaling / Pareto scaling锛?- L2 褰掍竴鍖栵紙l2_normalization / L2 normalization锛?- 闈㈢Н褰掍竴鍖栵紙area_normalization / area normalization锛?- 鏈€澶х粷瀵瑰€煎綊涓€鍖栵紙max_abs_normalization / max-absolute normalization锛?- 鍙嶅皠鐜囪浆鍚稿厜搴︼紙reflectance_to_absorbance / reflectance to absorbance锛?- 閫忓皠鐜囪浆鍚稿厜搴︼紙transmittance_to_absorbance / transmittance to absorbance锛?- 瀵规暟鍙樻崲锛坙og_transform / log transform锛?- 淇濈暀鐗╃悊娉㈡鑼冨洿锛坆and_range_select / band range selection锛?- 绉婚櫎鐗╃悊娉㈡鑼冨洿锛坮emove_band_ranges / remove band ranges锛?
 If the user does not specify methods, ask them to choose from the supported MVP
 set. If the user requests OSC, EMSC, wavelet denoising, airPLS/arPLS,
 continuum removal, resampling the band axis, PCA, SPA, CARS, VIP, UVE,

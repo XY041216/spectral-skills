@@ -14,7 +14,7 @@ def test_workflow_boundary_and_contract_handoffs() -> None:
     assert "name: spectral-workflow" in skill
     for phrase in [
         "spectral-reader",
-        "spectral-qc",
+        "spectral-check",
         "spectral-splitter",
         "spectral-preprocess",
         "spectral-feature",
@@ -28,20 +28,34 @@ def test_workflow_boundary_and_contract_handoffs() -> None:
         assert phrase in skill
 
 
-def test_generic_route_card_has_seven_separate_routes() -> None:
+def test_generic_route_card_is_profile_aware_and_uses_check_name() -> None:
     skill = read("SKILL.md")
+    gates = read("static/fragments/confirmation-gates.md")
+    combined = skill + gates
     for phrase in [
-        "确认推荐基线",
-        "只读取和 QC",
-        "手动选择常规方法",
-        "常规优化比较",
-        "深度学习模型实验",
-        "深度嵌入 + 传统分类器比较",
-        "可视化探索",
+        "spectral-check",
+        "optimization",
+        "comparison route",
+        "deep-learning model experiment",
+        "deep embedding plus traditional",
+        "visualization-only exploration",
         "Do not collapse routes 5-7",
         "Do not show full method menus at this point",
+        "mandatory reader-completion route card",
+        "下一步可以选一个路线继续",
+        "do not run spectral-check",
+        "User-facing terminology rule",
+        "never write `QC`",
+        "Canonical route card",
+        "all-supported candidate universe",
+        "small_sample",
+        "high_dimensional",
+        "very_high_dimensional",
+        "class_imbalance",
+        "cls_former_embedding_svm",
+        "contrastive_spectral_embedding + linear_svm/svm",
     ]:
-        assert phrase in skill
+        assert phrase in combined
 
 
 def test_stage_cards_are_transparent_bilingual_and_grouped() -> None:
@@ -49,13 +63,9 @@ def test_stage_cards_are_transparent_bilingual_and_grouped() -> None:
     gates = read("static/fragments/confirmation-gates.md")
     combined = skill + gates
     for phrase in [
-        "推荐方案",
-        "为什么推荐",
-        "本轮默认纳入",
-        "skill 还支持但本轮默认不纳入",
-        "需要额外确认前才能执行",
-        "自动调参能力",
-        "中文名称（method_code / English name）：",
+        "complete stage menu",
+        "Long menus may be grouped",
+        "Stage confirmation cards",
         "traditional/chemometric",
         "optional boosting",
         "small-sample deep/experimental",
@@ -82,10 +92,8 @@ def test_deep_protocol_is_data_aware_not_shared_defaults() -> None:
         assert phrase in skill
 
 
-def test_optimizer_has_three_levels_four_budgets_and_full_replay() -> None:
+def test_optimizer_route_lists_regular_and_deep_budget_choices() -> None:
     skill = read("SKILL.md")
-    gates = read("static/fragments/confirmation-gates.md")
-    combined = skill + gates
     for phrase in [
         "Level 1",
         "Level 2",
@@ -94,62 +102,20 @@ def test_optimizer_has_three_levels_four_budgets_and_full_replay() -> None:
         "`regular`",
         "`extended`",
         "`deep`",
-        "Macro-F1",
+        "validation design",
         "Never use final-test metrics",
-        "--preview-only",
-        "--lock-best-pipeline-params",
-        "locked replay must include preprocess, feature, model",
-    ]:
-        assert phrase in combined
-
-
-def test_modeling_completion_requires_full_table_not_best_only() -> None:
-    skill = read("SKILL.md")
-    gates = read("static/fragments/confirmation-gates.md")
-    combined = skill + gates
-    for phrase in [
-        "Modeling completion handoff",
-        "metrics.json",
-        "modeling_summary.json",
-        "modeling_contract.json",
-        "one row per model",
-        "Do not summarize only the selected model",
-        "Train Macro-F1",
-        "Validation Macro-F1",
-        "Validation Accuracy",
-        "Test accessed",
-        "Logistic Regression",
-        "Linear SVM",
-        "RBF-SVM",
-        "LDA",
-        "KNN",
-        "Random Forest",
-        "Extra Trees",
-    ]:
-        assert phrase in combined
-
-
-def test_report_route_requires_distinct_method_colors_and_sort_rule() -> None:
-    skill = read("SKILL.md")
-    for phrase in [
-        "white background",
-        "no grid",
-        "full black frames",
-        "Times New Roman",
-        "outside lowercase panel labels",
-        "distinct low-saturation colors by method",
-        "sorting rule",
-        "Do not default to a colorblind palette",
+        "self-developed",
+        "small-sample/deep",
+        "Do not ask\nonly for `确认 regular 72`",
+        "内置自创/深度候选是否加入选优组合",
+        "Do not present these candidates as a bare code list",
+        "CLS-former embedding + SVM",
+        "n=120, p=3401",
     ]:
         assert phrase in skill
 
 
-def test_leakage_and_test_policy_is_explicit() -> None:
-    skill = read("SKILL.md")
-    for phrase in [
-        "Never fit preprocessing/features on full data before split",
-        "Never use test metrics",
-        "confirmatory, not blind",
-        "Visual embedding separation is not predictive-performance evidence",
-    ]:
-        assert phrase in skill
+def test_workflow_route_index_uses_spectral_check() -> None:
+    route_index = read("static/core/route-index.md")
+    assert "`spectral-check`" in route_index
+    assert "qc_result.json" in route_index

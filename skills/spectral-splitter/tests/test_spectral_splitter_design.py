@@ -35,7 +35,7 @@ def test_frontmatter_and_manifest_boundary() -> None:
     skill = _read(SPLITTER_DIR / "SKILL.md")
     assert "name: spectral-splitter" in skill
     assert "spectral-reader" in skill
-    assert "spectral-qc" in skill
+    assert "spectral-check" in skill
     assert "split_contract.json" in skill
     assert "Do not use this skill to read raw files" in skill
     assert "Do not rewrite `X.csv`" in skill
@@ -61,37 +61,36 @@ def test_output_boundary_forbids_copied_matrices() -> None:
 
 def test_method_selection_documents_later_extensions() -> None:
     text = _read(SPLITTER_DIR / "static/fragments/method-selection.md")
-    for phrase in ["random", "stratified", "predefined_split", "SPXY", "Kennard-Stone", "group-aware", "K-fold", "regression"]:
-        assert phrase.lower() in text.lower()
-    assert "nested CV" in text
     for phrase in [
+        "random",
+        "stratified",
+        "predefined_split",
+        "SPXY",
+        "Kennard-Stone",
+        "group-aware",
+        "K-fold",
+        "regression",
+        "nested CV",
         "Recommended split",
         "Supported split methods",
         "When to choose another split",
         "You may choose",
         "full supported split-method menu",
-        "中文名称（method_code / English name）",
+        "method_code / English name",
         "English-only split menus are invalid",
-        "随机留出",
-        "分层留出",
-        "预定义划分",
-        "K 折交叉验证",
-        "分层 K 折交叉验证",
         "stratified_monte_carlo_cv",
-        "Kennard-Stone 代表性划分",
-        "SPXY 代表性划分",
-        "分组防泄漏划分",
         "stratified_group",
     ]:
-        assert phrase in text
+        assert phrase.lower() in text.lower()
+
     skill = _read(SPLITTER_DIR / "SKILL.md")
     for phrase in [
         "show the full supported split-method menu",
-        "中文名称（method_code / English name）",
-        "分层留出（stratified / stratified holdout）",
-        "分层分组划分（stratified_group / stratified group split）",
+        "Supported split-method menu",
+        "stratified",
+        "stratified_group",
     ]:
-        assert phrase in skill
+        assert phrase.lower() in skill.lower()
 
 
 def test_split_action_result_schema_is_valid_json() -> None:

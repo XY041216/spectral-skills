@@ -288,7 +288,7 @@ def _check_reader_contract_extensions(root: Path, checked: list[dict[str, Any]],
         (root / "skills" / "spectral-reader" / "static" / "fragments" / "excel-layout-cases.md", "excel_layout_cases_fragment"),
         (root / "skills" / "spectral-reader" / "static" / "fragments" / "missing-values.md", "missing_values_fragment"),
         (root / "skills" / "spectral-reader" / "static" / "fragments" / "sample-id-rules.md", "sample_id_rules_fragment"),
-        (root / "skills" / "spectral-reader" / "static" / "fragments" / "reader-qc-boundary.md", "reader_qc_boundary_fragment"),
+        (root / "skills" / "spectral-reader" / "static" / "fragments" / "reader-check-boundary.md", "reader_check_boundary_fragment"),
         (root / "skills" / "spectral-reader" / "references" / "missing-value-cases.md", "missing_value_cases_reference"),
         (root / "skills" / "spectral-reader" / "references" / "sample-id-cases.md", "sample_id_cases_reference"),
     ]

@@ -100,6 +100,6 @@ def test_skill_md_uses_standard_progressive_disclosure_sections() -> None:
         "static/core/confirmation-gates.md",
         "static/core/output-contract.md",
         "static/fragments/missing-values.md",
-        "static/fragments/reader-qc-boundary.md",
+        "static/fragments/reader-check-boundary.md",
     ]:
         assert path in skill

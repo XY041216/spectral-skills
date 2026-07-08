@@ -9,9 +9,7 @@ from pathlib import Path
 
 def _find_runtime_root() -> Path:
     here = Path(__file__).resolve()
-    candidates: list[Path] = []
-    for parent in here.parents:
-        candidates.append(parent)
+    candidates = list(here.parents) + [parent / "spectral-core" for parent in here.parents]
     for candidate in candidates:
         if (candidate / "spectral_core" / "__init__.py").is_file():
             return candidate

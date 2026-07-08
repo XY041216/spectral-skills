@@ -1,5 +1,5 @@
 name: spectral-workflow
-version: 0.1.0-beta.2
+version: 0.1.0-beta.1
 description: Rule-based Agent routing for the minimal spectral skills chain.
 skill_type: workflow routing policy
 

@@ -80,6 +80,69 @@ def test_one_shot_reads_wide_wavenumber_table_without_truncating_auto_detection(
     assert _contract(output)["shape"] == {"n_samples": 6, "n_features": 3401}
 
 
+def test_one_shot_uses_spectral_column_indexes_before_numeric_header_names(tmp_path: Path) -> None:
+    data_path = tmp_path / "wide.csv"
+    _write_wide_wavenumber_table(data_path)
+
+    output = tmp_path / "indexed_output"
+    response = read_spectral_dataset(
+        input_path=data_path,
+        output_dir=output,
+        sample_orientation="rows",
+        sample_id_column_index=0,
+        label_column="class",
+        spectral_start_column=1,
+        spectral_end_column=3401,
+        task_type="classification",
+    )
+
+    assert response["ok"] is True
+    assert response["result"]["status"] == "ready"
+    assert response["result"]["n_features"] == 3401
+    assert _contract(output)["shape"] == {"n_samples": 6, "n_features": 3401}
+
+
+def test_cli_accepts_spectral_column_indexes_without_numeric_header_collision(tmp_path: Path) -> None:
+    data_path = tmp_path / "wide.csv"
+    _write_wide_wavenumber_table(data_path)
+    output = tmp_path / "cli_indexed_output"
+    script = REPO_ROOT / "skills" / "spectral-reader" / "scripts" / "read_spectral_dataset.py"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--input",
+            str(data_path),
+            "--output-dir",
+            str(output),
+            "--sample-orientation",
+            "rows",
+            "--sample-id-column-index",
+            "0",
+            "--label-column",
+            "class",
+            "--spectral-start-column-index",
+            "1",
+            "--spectral-end-column-index",
+            "3401",
+            "--task-type",
+            "classification",
+            "--json",
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["ok"] is True
+    assert payload["result"]["n_features"] == 3401
+    assert _contract(output)["shape"] == {"n_samples": 6, "n_features": 3401}
+
+
 def test_cli_accepts_empty_header_sample_id_by_column_index(tmp_path: Path) -> None:
     data_path = tmp_path / "wide.csv"
     _write_wide_wavenumber_table(data_path)

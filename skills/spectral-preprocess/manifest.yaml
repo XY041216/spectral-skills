@@ -1,5 +1,5 @@
 name: spectral-preprocess
-version: 0.1.0-beta.2
+version: 0.1.0-beta.1
 description: Leakage-safe spectral preprocessing for split standard spectral data packages.
 skill_type: preprocessing
 

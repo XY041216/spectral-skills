@@ -1,5 +1,5 @@
 name: spectral-report
-version: 0.1.0-beta.2
+version: 0.1.0-beta.1
 description: Publication-grade, contract-aware spectral figures and reproducible figure packages.
 skill_type: reporting
 

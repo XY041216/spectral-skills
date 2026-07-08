@@ -1,6 +1,41 @@
 {
   "name": "spectral-skills",
-  "version": "0.1.0-beta.2",
-  "description": "Agent-oriented spectral data skills for leakage-safe spectral reading, QC, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing.",
-  "skills": "./skills"
+  "version": "0.1.0-beta.1",
+  "description": "Agent-oriented spectral data skills for leakage-safe spectral reading, quality checking, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing.",
+  "author": {
+    "name": "Spectral Skills Contributors",
+    "url": "https://github.com/XY041216/spectral-skills"
+  },
+  "homepage": "https://github.com/XY041216/spectral-skills",
+  "repository": "https://github.com/XY041216/spectral-skills.git",
+  "license": "MIT",
+  "keywords": [
+    "spectral",
+    "chemometrics",
+    "classification",
+    "regression",
+    "workflow",
+    "publication-figures"
+  ],
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Spectral Skills",
+    "shortDescription": "Leakage-safe spectral data processing workflows.",
+    "longDescription": "Spectral Skills packages nine coordinated Codex skills for spectral data reading, quality checking, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing. The bundle keeps shared runtime code and schemas inside one plugin image so the skills install and update together.",
+    "developerName": "Spectral Skills Contributors",
+    "category": "Productivity",
+    "capabilities": [
+      "Write",
+      "Data Analysis",
+      "Research"
+    ],
+    "websiteURL": "https://github.com/XY041216/spectral-skills",
+    "defaultPrompt": [
+      "Run a leakage-safe spectral workflow.",
+      "Read spectral data into a standard package.",
+      "Create publication-ready spectral figures."
+    ],
+    "brandColor": "#2563EB"
+  }
 }

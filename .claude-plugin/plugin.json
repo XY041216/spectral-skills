@@ -1,14 +1,14 @@
 {
   "name": "spectral-skills",
-  "description": "Claude-compatible and Codex-compatible spectral workflow bundles for reading raw spectral files, QC, splitting, preprocessing, feature extraction, modeling, optimizer searches, publication figures, and end-to-end workflow routing. Skills include spectral-reader, spectral-qc, spectral-splitter, spectral-preprocess, spectral-feature, spectral-modeling, spectral-optimizer, spectral-report, and spectral-workflow.",
-  "version": "0.1.0-beta.2",
+  "description": "Claude-compatible and Codex-compatible spectral workflow bundles for reading raw spectral files, QC, splitting, preprocessing, feature extraction, modeling, optimizer searches, publication figures, and end-to-end workflow routing. Skills include spectral-reader, spectral-check, spectral-splitter, spectral-preprocess, spectral-feature, spectral-modeling, spectral-optimizer, spectral-report, and spectral-workflow.",
+  "version": "0.1.0-beta.1",
   "author": {
     "name": "Spectral Skills Contributors",
-    "email": ""
+    "url": "https://github.com/XY041216/spectral-skills"
   },
   "license": "MIT",
-  "homepage": "",
-  "repository": "",
+  "homepage": "https://github.com/XY041216/spectral-skills",
+  "repository": "https://github.com/XY041216/spectral-skills.git",
   "keywords": [
     "spectral",
     "chemometrics",

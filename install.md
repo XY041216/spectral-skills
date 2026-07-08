@@ -8,7 +8,7 @@ This project has three release-facing shapes:
   `.claude-plugin/` exposes the same bundle to Claude-compatible agents.
 
 Users should install the plugin image, not a single skill folder. The
-`spectral-workflow` skill depends on `spectral-reader`, `spectral-qc`,
+`spectral-workflow` skill depends on `spectral-reader`, `spectral-check`,
 `spectral-splitter`, `spectral-preprocess`, `spectral-feature`,
 `spectral-modeling`, `spectral-optimizer`, `spectral-report`, and
 `spectral_core`.
@@ -36,7 +36,7 @@ plugins/spectral-skills/
   .mcp.json
   skills/
     spectral-reader/
-    spectral-qc/
+    spectral-check/
     spectral-splitter/
     spectral-preprocess/
     spectral-feature/
@@ -61,16 +61,59 @@ The repository root also contains Claude-compatible metadata:
 Before publishing a new release, keep the semantic plugin version in
 `install/build_codex_plugin.py` and all skill manifests aligned. Use the PEP 440
 equivalent in `pyproject.toml`/`uv.lock` (for example, plugin
-`0.1.0-beta.2` maps to Python package `0.1.0b2`). Rebuild the plugin image and
+`0.1.0-beta.1` maps to Python package `0.1.0b1`). Rebuild the plugin image and
 let `check_codex_plugin.py` verify the generated `plugin.json` version.
 
 ## Codex Plugin Install
 
 Codex users should install the repository as a plugin marketplace:
 
+Before importing or enabling the plugin, validate the user-level Codex config:
+
+```bash
+python install/check_codex_config.py --json
+```
+
+If Codex reports an error such as:
+
+```text
+Could not load config.toml ... unclosed table, expected ]
+```
+
+the failing file is `~/.codex/config.toml` or `%USERPROFILE%\.codex\config.toml`.
+It is not a Spectral Skills runtime error. Importing or enabling a plugin makes
+Codex reload its global configuration, so a historical malformed entry can
+surface at that moment. The most common cause is an old `[projects.'...']`
+table whose path was truncated or lost the closing quote and `]`. Fix or remove
+the malformed table, rerun the preflight, and only then retry plugin import.
+
 ```bash
 codex plugin marketplace add https://github.com/XY041216/spectral-skills.git --ref main
 codex plugin add spectral-skills@spectral-skills-local-marketplace
+```
+
+If the Codex CLI cannot run on Windows, or if `config.toml` contains the
+marketplace entry but the plugin does not appear under
+`%USERPROFILE%\.codex\plugins\cache`, run the repository installer from the
+clone root:
+
+```bash
+python install/install_codex_plugin.py --json
+```
+
+This installer does both required local steps:
+
+- upserts the `spectral-skills-local-marketplace` and
+  `spectral-skills@spectral-skills-local-marketplace` entries in
+  `config.toml`, after writing a backup;
+- materializes the built plugin image into
+  `%USERPROFILE%\.codex\plugins\cache\spectral-skills-local-marketplace\spectral-skills\<version>\`.
+
+Run the verifier after installation:
+
+```bash
+python install/check_codex_plugin.py --json
+python install/check_codex_config.py --json
 ```
 
 Codex Desktop users can add the same repository as a custom plugin marketplace:
@@ -80,6 +123,12 @@ Marketplace source: https://github.com/XY041216/spectral-skills.git
 Branch/ref: main
 Plugin: spectral-skills
 ```
+
+The repository root now also contains `.codex-plugin/plugin.json` and `.mcp.json`
+as a GitHub plugin-import entrypoint. That root manifest delegates the Codex
+skills path to `plugins/spectral-skills/skills`, which is the built release
+image. This prevents a generic GitHub import flow from treating the development
+source under root `skills/` as the release unit.
 
 For purely local Codex use, give the user a release bundle that contains both:
 
@@ -131,16 +180,18 @@ source = 'C:\path\to\spectral-skills'
 enabled = true
 ```
 
-After the Agent loads that marketplace/plugin, it copies the plugin into its
-own cache. A typical installed path looks like:
+After the Agent loads that marketplace/plugin, or after
+`install/install_codex_plugin.py` materializes the local cache, a typical
+installed path looks like:
 
 ```text
-C:\Users\<USER>\.codex\plugins\cache\spectral-skills-local-marketplace\spectral-skills\0.1.0-beta.2\
+C:\Users\<USER>\.codex\plugins\cache\spectral-skills-local-marketplace\spectral-skills\0.1.0-beta.1\
 ```
 
-Users normally do not edit that cache folder. They install/enable the plugin
-through the marketplace source, then invoke the skills by name. The main
-full-chain entry is:
+Users normally do not hand-edit that cache folder. If Desktop does not create
+it automatically, use `python install/install_codex_plugin.py --json` so the
+cache copy is created from the release image and validated. Then restart Codex
+in a new thread and invoke the skills by name. The main full-chain entry is:
 
 ```text
 $spectral-skills:spectral-workflow
@@ -149,56 +200,27 @@ $spectral-skills:spectral-workflow
 Example user request:
 
 ```text
-Use $spectral-skills:spectral-workflow to read Tablet_ext_0-3.csv, run QC,
+Use $spectral-skills:spectral-workflow to read Tablet_ext_0-3.csv, run quality checks,
 split 6:2:2, apply SNV preprocessing, use no feature reduction, and train a
 random_forest_classifier.
 ```
 
-## Complete Local-Skill Install
+## Do Not Use Direct GitHub Skill Installer
 
-Spectral Skills is an integrated bundle, not a collection of independent skill
-folders. The nine user-facing skills share the repository-level `spectral_core`
-Python runtime and shared contracts. A generic GitHub skill installer copies only
-the selected skill directories, so importing `skills/spectral-*` individually is
-incomplete even if discovery reports success.
+Spectral Skills is a plugin release unit, not a set of independent GitHub skill
+folders. If an import log shows `skill-installer` or
+`install-skill-from-github.py --repo XY041216/spectral-skills`, stop that flow
+and install the plugin marketplace instead.
 
-Use the plugin marketplace above, or clone the repository and run the bundled
-cross-platform installer:
-
-```bash
-git clone https://github.com/XY041216/spectral-skills.git
-cd spectral-skills
-python scripts/update-codex-skills.py
-```
-
-The installer atomically updates only these managed paths in the Codex skills
-directory:
-
-```text
-spectral-reader/       spectral-qc/          spectral-splitter/
-spectral-preprocess/   spectral-feature/     spectral-modeling/
-spectral-optimizer/    spectral-report/      spectral-workflow/
-_spectral_shared/      spectral_core/
-```
-
-Only the nine `spectral-*` stage folders contain `SKILL.md`. `_spectral_shared`
-and `spectral_core` are namespaced support directories, so they are not exposed
-as user-facing skills and do not overwrite another bundle's `_shared` directory.
-The installer stages and smoke-tests the complete bundle before replacing the
-previous Spectral Skills install. It does not modify unrelated skills.
-
-Useful options:
+Direct skill installation copies isolated folders into `~/.codex/skills` and can
+drop shared runtime files, plugin metadata, MCP configuration, and release
+checks. Even when individual folders appear to install successfully, the result
+is not the supported Spectral Skills distribution. Use:
 
 ```bash
-python scripts/update-codex-skills.py --check
-python scripts/update-codex-skills.py --pull
-python scripts/update-codex-skills.py --destination /custom/codex/skills --json
+codex plugin marketplace add https://github.com/XY041216/spectral-skills.git --ref main
+codex plugin add spectral-skills@spectral-skills-local-marketplace
 ```
-
-After installation or update, restart Codex so skill discovery reloads the nine
-entries. If an older release installed `spectral-core` as a skill, remove that
-obsolete folder after this installer succeeds; the new runtime is
-`spectral_core` (underscore) and intentionally has no `SKILL.md`.
 
 ## Claude-Compatible Local Install
 

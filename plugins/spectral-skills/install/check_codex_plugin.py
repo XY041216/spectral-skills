@@ -22,8 +22,9 @@ from spectral_core.reader.response import error_response, ok_response
 
 PLUGIN_DIR = ROOT / "plugins" / "spectral-skills"
 PLUGIN_NAME = "spectral-skills"
-PLUGIN_VERSION = "0.1.0-beta.2"
+PLUGIN_VERSION = "0.1.0-beta.1"
 CLAUDE_PLUGIN_DIR = ROOT / ".claude-plugin"
+REPOSITORY_URL = "https://github.com/XY041216/spectral-skills.git"
 
 
 def check_codex_plugin() -> dict[str, Any]:
@@ -34,6 +35,8 @@ def check_codex_plugin() -> dict[str, Any]:
 
     plugin_json = _load_json(PLUGIN_DIR / ".codex-plugin" / "plugin.json", checked, missing, mismatches, "plugin_json")
     mcp_json = _load_json(PLUGIN_DIR / ".mcp.json", checked, missing, mismatches, "mcp_json")
+    root_plugin_json = _load_json(ROOT / ".codex-plugin" / "plugin.json", checked, missing, mismatches, "root_plugin_json")
+    root_mcp_json = _load_json(ROOT / ".mcp.json", checked, missing, mismatches, "root_mcp_json")
     _load_json(ROOT / ".agents" / "plugins" / "marketplace.json", checked, missing, mismatches, "marketplace_json")
     claude_plugin_json = _load_json(CLAUDE_PLUGIN_DIR / "plugin.json", checked, missing, mismatches, "claude_plugin_json")
     claude_marketplace_json = _load_json(CLAUDE_PLUGIN_DIR / "marketplace.json", checked, missing, mismatches, "claude_marketplace_json")
@@ -42,8 +45,8 @@ def check_codex_plugin() -> dict[str, Any]:
     _require_dir(PLUGIN_DIR / "skills", checked, missing, "plugin_skills_dir")
     _require_file(PLUGIN_DIR / "skills" / "spectral-reader" / "SKILL.md", checked, missing, "spectral_reader_skill")
     _require_file(PLUGIN_DIR / "skills" / "spectral-reader" / "manifest.yaml", checked, missing, "spectral_reader_manifest")
-    _require_file(PLUGIN_DIR / "skills" / "spectral-qc" / "SKILL.md", checked, missing, "spectral_qc_skill")
-    _require_file(PLUGIN_DIR / "skills" / "spectral-qc" / "manifest.yaml", checked, missing, "spectral_qc_manifest")
+    _require_file(PLUGIN_DIR / "skills" / "spectral-check" / "SKILL.md", checked, missing, "spectral_check_skill")
+    _require_file(PLUGIN_DIR / "skills" / "spectral-check" / "manifest.yaml", checked, missing, "spectral_check_manifest")
     _require_file(PLUGIN_DIR / "skills" / "spectral-splitter" / "SKILL.md", checked, missing, "spectral_splitter_skill")
     _require_file(PLUGIN_DIR / "skills" / "spectral-splitter" / "manifest.yaml", checked, missing, "spectral_splitter_manifest")
     _require_file(PLUGIN_DIR / "skills" / "spectral-preprocess" / "SKILL.md", checked, missing, "spectral_preprocess_skill")
@@ -85,6 +88,8 @@ def check_codex_plugin() -> dict[str, Any]:
     _require_dir(PLUGIN_DIR / "scripts" / "modeling", checked, missing, "plugin_modeling_fallback_scripts")
     _require_dir(PLUGIN_DIR / "scripts" / "optimizer", checked, missing, "plugin_optimizer_fallback_scripts")
     _require_dir(PLUGIN_DIR / "scripts" / "workflow", checked, missing, "plugin_workflow_fallback_scripts")
+    _require_file(PLUGIN_DIR / "install" / "check_codex_config.py", checked, missing, "plugin_codex_config_preflight")
+    _require_file(PLUGIN_DIR / "install" / "install_codex_plugin.py", checked, missing, "plugin_codex_desktop_installer")
     _require_file(PLUGIN_DIR / "README.md", checked, missing, "plugin_readme")
     _require_file(PLUGIN_DIR / "requirements.txt", checked, missing, "plugin_requirements")
 
@@ -98,11 +103,13 @@ def check_codex_plugin() -> dict[str, Any]:
         checked.append(_ok("shared_skill_absent", str(PLUGIN_DIR / "shared" / "SKILL.md")))
 
     _check_plugin_json(plugin_json, checked, mismatches)
+    _check_root_plugin_json(root_plugin_json, checked, mismatches)
     _check_claude_plugin_json(claude_plugin_json, checked, mismatches)
     _check_claude_marketplace_json(claude_marketplace_json, checked, mismatches)
     _check_mcp_json(mcp_json, checked, mismatches)
+    _check_root_mcp_json(root_mcp_json, checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-reader" / "manifest.yaml", checked, mismatches)
-    _check_yaml(PLUGIN_DIR / "skills" / "spectral-qc" / "manifest.yaml", checked, mismatches)
+    _check_yaml(PLUGIN_DIR / "skills" / "spectral-check" / "manifest.yaml", checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-splitter" / "manifest.yaml", checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-preprocess" / "manifest.yaml", checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-feature" / "manifest.yaml", checked, mismatches)
@@ -112,19 +119,20 @@ def check_codex_plugin() -> dict[str, Any]:
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-workflow" / "manifest.yaml", checked, mismatches)
     _check_manifest_method_scopes(checked, mismatches)
     _check_schema_mirrors(checked, mismatches)
-    _check_local_install_sources(checked, missing, mismatches)
+    _check_standalone_core_skill(checked, missing, mismatches)
     _check_source_mirrors(checked, mismatches)
     _check_no_excluded_artifacts(PLUGIN_DIR, checked, mismatches)
+    _run_codex_config_preflight_selftest(checked, mismatches, warnings)
+    _run_codex_desktop_install_selftest(checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-reader/scripts/server_health.py", "--json"], "plugin_server_health", checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-reader/scripts/check_consistency.py", "--json"], "plugin_skill_consistency", checked, mismatches, warnings)
-    _run_plugin_script(["skills/spectral-qc/scripts/qc_spectral_package.py", "--mode", "methods", "--json"], "plugin_qc_methods", checked, mismatches, warnings)
+    _run_plugin_script(["skills/spectral-check/scripts/qc_spectral_package.py", "--mode", "methods", "--json"], "plugin_check_methods", checked, mismatches, warnings)
     _run_plugin_splitter_smoke(checked, mismatches, warnings)
     _run_plugin_preprocess_smoke(checked, mismatches, warnings)
     _run_plugin_feature_smoke(checked, mismatches, warnings)
     _run_plugin_modeling_smoke(checked, mismatches, warnings)
     _run_plugin_optimizer_smoke(checked, mismatches, warnings)
     _run_plugin_workflow_smoke(checked, mismatches, warnings)
-    _run_local_install_smoke(checked, mismatches)
     _remove_empty_dir(PLUGIN_DIR / "assets")
 
     status = "failed" if missing or any(item.get("severity") == "error" for item in mismatches) else "degraded" if mismatches or warnings else "passed"
@@ -176,6 +184,57 @@ def _check_plugin_json(payload: dict[str, Any], checked: list[dict[str, Any]], m
         mismatches.append(_issue("PLUGIN_SKILLS_PATH_MISMATCH", "plugin.json skills path must point to ./skills.", severity="error", observed=payload.get("skills")))
     else:
         checked.append(_ok("plugin_skills_path", str(payload.get("skills"))))
+    if payload.get("mcpServers") != "./.mcp.json":
+        mismatches.append(_issue("PLUGIN_MCP_DECLARATION_MISSING", "plugin.json must declare mcpServers as ./.mcp.json.", severity="error", observed=payload.get("mcpServers")))
+    else:
+        checked.append(_ok("plugin_mcp_servers_path", "./.mcp.json"))
+    author = payload.get("author") or {}
+    if author.get("name") != "Spectral Skills Contributors":
+        mismatches.append(_issue("PLUGIN_AUTHOR_MISSING", "plugin.json must include the Spectral Skills author object.", severity="error", observed=author))
+    else:
+        checked.append(_ok("plugin_author", author["name"]))
+    if payload.get("repository") != REPOSITORY_URL:
+        mismatches.append(_issue("PLUGIN_REPOSITORY_MISMATCH", "plugin.json repository must point to the public GitHub repository.", severity="error", expected=REPOSITORY_URL, observed=payload.get("repository")))
+    else:
+        checked.append(_ok("plugin_repository", REPOSITORY_URL))
+    interface = payload.get("interface") or {}
+    required_interface = ["displayName", "shortDescription", "longDescription", "developerName", "category", "capabilities", "defaultPrompt"]
+    missing_interface = [key for key in required_interface if not interface.get(key)]
+    if missing_interface:
+        mismatches.append(_issue("PLUGIN_INTERFACE_INCOMPLETE", "plugin.json interface metadata is incomplete.", severity="error", missing=missing_interface))
+    else:
+        checked.append(_ok("plugin_interface", interface.get("displayName", "")))
+
+
+def _check_root_plugin_json(payload: dict[str, Any], checked: list[dict[str, Any]], mismatches: list[dict[str, Any]]) -> None:
+    if payload.get("name") != PLUGIN_NAME:
+        mismatches.append(_issue("ROOT_PLUGIN_NAME_MISMATCH", "Root .codex-plugin/plugin.json name must be spectral-skills.", severity="error", observed=payload.get("name")))
+    else:
+        checked.append(_ok("root_plugin_name", PLUGIN_NAME))
+    if payload.get("version") != PLUGIN_VERSION:
+        mismatches.append(_issue("ROOT_PLUGIN_VERSION_MISMATCH", "Root plugin version must match the current release version.", severity="error", expected=PLUGIN_VERSION, observed=payload.get("version")))
+    else:
+        checked.append(_ok("root_plugin_version", PLUGIN_VERSION))
+    if payload.get("skills") != "./plugins/spectral-skills/skills":
+        mismatches.append(
+            _issue(
+                "ROOT_PLUGIN_SKILLS_PATH_MISMATCH",
+                "Root plugin entrypoint must delegate skills to the built plugin image.",
+                severity="error",
+                observed=payload.get("skills"),
+            )
+        )
+    else:
+        checked.append(_ok("root_plugin_skills_path", "./plugins/spectral-skills/skills"))
+    if payload.get("mcpServers") != "./.mcp.json":
+        mismatches.append(_issue("ROOT_PLUGIN_MCP_DECLARATION_MISSING", "Root plugin entrypoint must declare mcpServers as ./.mcp.json.", severity="error", observed=payload.get("mcpServers")))
+    else:
+        checked.append(_ok("root_plugin_mcp_servers_path", "./.mcp.json"))
+    interface = payload.get("interface") or {}
+    if interface.get("displayName") != "Spectral Skills":
+        mismatches.append(_issue("ROOT_PLUGIN_INTERFACE_MISMATCH", "Root plugin entrypoint must expose the Spectral Skills interface metadata.", severity="error", observed=interface))
+    else:
+        checked.append(_ok("root_plugin_interface", interface["displayName"]))
 
 
 def _check_claude_plugin_json(payload: dict[str, Any], checked: list[dict[str, Any]], mismatches: list[dict[str, Any]]) -> None:
@@ -233,6 +292,26 @@ def _check_mcp_json(payload: dict[str, Any], checked: list[dict[str, Any]], mism
         checked.append(_ok("mcp_pythonpath", "."))
     if command and (":" in command or "\\" in command or "/" in command):
         mismatches.append(_issue("MCP_ABSOLUTE_PYTHON_PATH", ".mcp.json must not hard-code a machine Python path.", severity="error", command=command))
+
+
+def _check_root_mcp_json(payload: dict[str, Any], checked: list[dict[str, Any]], mismatches: list[dict[str, Any]]) -> None:
+    server = ((payload.get("mcpServers") or {}).get("spectral-reader") or {})
+    command = server.get("command")
+    if command != "python":
+        mismatches.append(_issue("ROOT_MCP_COMMAND_MISMATCH", "Root .mcp.json must use generic python command.", severity="error", observed=command))
+    else:
+        checked.append(_ok("root_mcp_command", command))
+    args = server.get("args") or []
+    expected_args = ["plugins/spectral-skills/skills/spectral-reader/mcp-server/server.py"]
+    if args != expected_args:
+        mismatches.append(_issue("ROOT_MCP_ARGS_MISMATCH", "Root .mcp.json args must point to the built plugin image server.py.", severity="error", expected=expected_args, observed=args))
+    else:
+        checked.append(_ok("root_mcp_args", ",".join(args)))
+    env = server.get("env") or {}
+    if env.get("PYTHONPATH") != "plugins/spectral-skills":
+        mismatches.append(_issue("ROOT_MCP_PYTHONPATH_MISMATCH", "Root .mcp.json must set PYTHONPATH to the built plugin image.", severity="error", observed=env.get("PYTHONPATH")))
+    else:
+        checked.append(_ok("root_mcp_pythonpath", "plugins/spectral-skills"))
 
 
 def _check_yaml(path: Path, checked: list[dict[str, Any]], mismatches: list[dict[str, Any]]) -> None:
@@ -353,7 +432,7 @@ def _check_source_mirrors(checked: list[dict[str, Any]], mismatches: list[dict[s
         (ROOT / "skills" / name, PLUGIN_DIR / "skills" / name, f"skill:{name}")
         for name in [
             "spectral-reader",
-            "spectral-qc",
+            "spectral-check",
             "spectral-splitter",
             "spectral-preprocess",
             "spectral-feature",
@@ -367,19 +446,7 @@ def _check_source_mirrors(checked: list[dict[str, Any]], mismatches: list[dict[s
         [
             (ROOT / "skills" / "_shared", PLUGIN_DIR / "shared", "shared"),
             (ROOT / "spectral_core", PLUGIN_DIR / "spectral_core", "spectral_core"),
-            *[
-                (ROOT / "scripts" / name, PLUGIN_DIR / "scripts" / name, f"scripts:{name}")
-                for name in [
-                    "reader",
-                    "qc",
-                    "splitter",
-                    "preprocess",
-                    "feature",
-                    "modeling",
-                    "optimizer",
-                    "workflow",
-                ]
-            ],
+            (ROOT / "scripts", PLUGIN_DIR / "scripts", "scripts"),
             (ROOT / "install", PLUGIN_DIR / "install", "install"),
         ]
     )
@@ -433,82 +500,35 @@ def _check_schema_mirrors(checked: list[dict[str, Any]], mismatches: list[dict[s
         checked.append(_ok("shared_runtime_schema_mirrors", str(shared)))
 
 
-def _check_local_install_sources(
+def _check_standalone_core_skill(
     checked: list[dict[str, Any]],
     missing: list[dict[str, Any]],
     mismatches: list[dict[str, Any]],
 ) -> None:
-    """Ensure local installs keep shared dependencies out of skill discovery."""
+    """Ensure direct GitHub skill installs can get the shared runtime."""
 
-    installer = ROOT / "scripts" / "update-codex-skills.py"
-    _require_file(installer, checked, missing, "local_bundle_installer")
-    _require_file(ROOT / "spectral_core" / "__init__.py", checked, missing, "local_shared_runtime")
-    _require_dir(ROOT / "skills" / "_shared", checked, missing, "local_shared_resources")
-    obsolete_skill = ROOT / "skills" / "spectral-core"
-    if obsolete_skill.exists():
+    skill_dir = ROOT / "skills" / "spectral-core"
+    runtime_mirror = skill_dir / "spectral_core"
+    _require_file(skill_dir / "SKILL.md", checked, missing, "standalone_spectral_core_skill")
+    _require_file(runtime_mirror / "__init__.py", checked, missing, "standalone_spectral_core_runtime")
+    source_files = _release_file_map(ROOT / "spectral_core", {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"})
+    mirror_files = _release_file_map(runtime_mirror, {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"})
+    if source_files != mirror_files:
+        source_paths = set(source_files)
+        mirror_paths = set(mirror_files)
+        changed = sorted(path for path in source_paths & mirror_paths if source_files[path] != mirror_files[path])
         mismatches.append(
             _issue(
-                "RUNTIME_EXPOSED_AS_SKILL",
-                "skills/spectral-core must not exist; spectral_core is a shared runtime, not a discoverable skill.",
+                "STANDALONE_CORE_RUNTIME_MISMATCH",
+                "skills/spectral-core/spectral_core must mirror the root spectral_core runtime for direct GitHub skill installs.",
                 severity="error",
-                path=str(obsolete_skill),
+                source_only=sorted(source_paths - mirror_paths)[:20],
+                mirror_only=sorted(mirror_paths - source_paths)[:20],
+                changed=changed[:20],
             )
         )
     else:
-        checked.append(_ok("runtime_not_exposed_as_skill", str(obsolete_skill)))
-
-
-def _run_local_install_smoke(
-    checked: list[dict[str, Any]],
-    mismatches: list[dict[str, Any]],
-) -> None:
-    installer = ROOT / "scripts" / "update-codex-skills.py"
-    if not installer.is_file():
-        return
-    try:
-        with tempfile.TemporaryDirectory(prefix="spectral-skills-install-") as temp_dir:
-            destination = Path(temp_dir) / "skills"
-            completed = subprocess.run(
-                [sys.executable, str(installer), "--destination", str(destination), "--json"],
-                cwd=ROOT,
-                capture_output=True,
-                text=True,
-                timeout=120,
-                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
-            )
-            try:
-                payload = json.loads(completed.stdout)
-            except json.JSONDecodeError:
-                payload = {"stdout": completed.stdout, "stderr": completed.stderr}
-            if completed.returncode != 0 or not payload.get("ok"):
-                mismatches.append(
-                    _issue(
-                        "LOCAL_INSTALL_SMOKE_FAILED",
-                        "The complete local-skill installer did not produce a valid bundle.",
-                        severity="error",
-                        returncode=completed.returncode,
-                        result=payload,
-                    )
-                )
-            elif (destination / "spectral-core" / "SKILL.md").exists():
-                mismatches.append(
-                    _issue(
-                        "LOCAL_INSTALL_EXPOSED_RUNTIME",
-                        "The local installer exposed spectral-core as a skill.",
-                        severity="error",
-                    )
-                )
-            else:
-                checked.append(_ok("local_bundle_install_smoke", str(destination)))
-    except Exception as exc:
-        mismatches.append(
-            _issue(
-                "LOCAL_INSTALL_SMOKE_EXCEPTION",
-                "The complete local-skill installer could not be tested.",
-                severity="error",
-                error=str(exc),
-            )
-        )
+        checked.append(_ok("standalone_core_runtime_mirror", str(runtime_mirror)))
 
 
 def _release_file_map(root: Path, excluded_dirs: set[str]) -> dict[str, bytes]:
@@ -538,6 +558,107 @@ def _run_plugin_script(args: list[str], key: str, checked: list[dict[str, Any]],
             checked.append(_ok(key, " ".join(args)))
     except Exception as exc:
         mismatches.append(_issue("PLUGIN_SCRIPT_EXCEPTION", "Plugin script could not run.", severity="error", key=key, error=str(exc)))
+
+
+def _run_codex_config_preflight_selftest(
+    checked: list[dict[str, Any]],
+    mismatches: list[dict[str, Any]],
+    warnings: list[dict[str, Any]],
+) -> None:
+    test_dir = PLUGIN_DIR / "assets" / "_check_codex_config"
+    valid_config = test_dir / "valid.toml"
+    invalid_config = test_dir / "invalid.toml"
+    script = PLUGIN_DIR / "install" / "check_codex_config.py"
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    try:
+        test_dir.mkdir(parents=True, exist_ok=True)
+        valid_config.write_text(
+            "[marketplaces.spectral-skills-local-marketplace]\n"
+            "source_type = \"local\"\n"
+            "source = 'C:\\\\path\\\\to\\\\spectral-skills'\n",
+            encoding="utf-8",
+        )
+        invalid_config.write_text(
+            "[projects.'C:\\\\bad\\\\truncated]\n"
+            "trust_level = \"trusted\"\n",
+            encoding="utf-8",
+        )
+        valid = subprocess.run(
+            [sys.executable, str(script), "--config", str(valid_config), "--json"],
+            cwd=PLUGIN_DIR,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=env,
+        )
+        invalid = subprocess.run(
+            [sys.executable, str(script), "--config", str(invalid_config), "--json"],
+            cwd=PLUGIN_DIR,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            env=env,
+        )
+        valid_payload = json.loads(valid.stdout)
+        invalid_payload = json.loads(invalid.stdout)
+        invalid_codes = {item.get("code") for item in invalid_payload.get("errors", [])}
+        if valid.returncode != 0 or not valid_payload.get("ok"):
+            mismatches.append(_issue("CODEX_CONFIG_PREFLIGHT_VALID_FAILED", "Codex config preflight rejected valid TOML.", severity="error", stdout=valid.stdout, stderr=valid.stderr))
+        elif invalid.returncode == 0 or invalid_payload.get("ok") or "CODEX_CONFIG_TOML_INVALID" not in invalid_codes:
+            mismatches.append(_issue("CODEX_CONFIG_PREFLIGHT_INVALID_FAILED", "Codex config preflight did not detect malformed TOML.", severity="error", stdout=invalid.stdout, stderr=invalid.stderr))
+        else:
+            checked.append(_ok("codex_config_preflight_selftest", str(script)))
+    except Exception as exc:
+        mismatches.append(_issue("CODEX_CONFIG_PREFLIGHT_EXCEPTION", "Codex config preflight self-test could not run.", severity="error", error=str(exc)))
+    finally:
+        if test_dir.exists():
+            shutil.rmtree(test_dir)
+
+
+def _run_codex_desktop_install_selftest(
+    checked: list[dict[str, Any]],
+    mismatches: list[dict[str, Any]],
+    warnings: list[dict[str, Any]],
+) -> None:
+    script = ROOT / "install" / "install_codex_plugin.py"
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    with tempfile.TemporaryDirectory(prefix="spectral-codex-home-") as temp_dir:
+        test_home = Path(temp_dir)
+        try:
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(script),
+                    "--repo-root",
+                    str(ROOT),
+                    "--codex-home",
+                    str(test_home),
+                    "--json",
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                env=env,
+            )
+            payload = json.loads(completed.stdout)
+            result = payload.get("result", {})
+            cache_path = Path(result.get("cache", {}).get("path", ""))
+            config_path = test_home / "config.toml"
+            if completed.returncode != 0 or not payload.get("ok"):
+                mismatches.append(_issue("CODEX_DESKTOP_INSTALL_FAILED", "Codex Desktop installer rejected a sandbox install.", severity="error", stdout=completed.stdout, stderr=completed.stderr))
+            elif not config_path.exists():
+                mismatches.append(_issue("CODEX_DESKTOP_INSTALL_CONFIG_MISSING", "Codex Desktop installer did not write config.toml in the sandbox.", severity="error", path=str(config_path)))
+            elif not (cache_path / ".codex-plugin" / "plugin.json").exists():
+                mismatches.append(_issue("CODEX_DESKTOP_INSTALL_CACHE_MISSING", "Codex Desktop installer did not materialize the plugin cache.", severity="error", path=str(cache_path)))
+            elif not (cache_path / "skills" / "spectral-workflow" / "SKILL.md").exists():
+                mismatches.append(_issue("CODEX_DESKTOP_INSTALL_SKILL_MISSING", "Codex Desktop installer cache is missing spectral-workflow.", severity="error", path=str(cache_path)))
+            else:
+                checked.append(_ok("codex_desktop_install_selftest", str(script)))
+        except Exception as exc:
+            mismatches.append(_issue("CODEX_DESKTOP_INSTALL_EXCEPTION", "Codex Desktop install self-test could not run.", severity="error", error=str(exc)))
 
 
 def _remove_empty_dir(path: Path) -> None:
