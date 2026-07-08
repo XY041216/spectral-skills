@@ -1,625 +1,482 @@
 # Spectral Skills
 
-面向 Codex、Claude 等智能体的端到端光谱数据分析技能集合。项目覆盖光谱读取、质量控制、数据划分、预处理、特征工程、分类/回归建模、受预算约束的自动优化，以及论文级图表与报告输出。
+Spectral Skills 是面向 Codex、Claude 等智能体环境的光谱数据分析插件系统。它把光谱数据读取、光谱数据质量检查、光谱数据划分、光谱数据预处理、特征工程、分类/回归建模、预处理、特征工程和建模组合的自动优化、科研绘图与报告输出拆分为职责明确的技能模块，并通过稳定脚本完成实际计算。
 
-Spectral Skills is a leakage-aware agent skill collection for end-to-end spectral analysis. It ships Codex and Claude-compatible plugin metadata from one source tree.
+本项目的目标不是把所有步骤隐藏起来，而是让用户在自然语言交互中完成可追踪、可复跑的光谱分析。系统会在样本方向、标签对齐、异常样本处理、划分方式、预处理参数、候选方法范围、自动优化规模和最终测试等关键位置暂停确认。测试集只在处理流程和模型参数锁定后用于最终评估，不参与方法选择或参数调整。
 
-## 核心特点
+---
 
-- **端到端但不做成黑箱**：九个 skill 各自负责一个清晰阶段，由 `spectral-workflow` 路由组合。
-- **防止数据泄漏**：先划分，再拟合预处理、特征和模型；测试集不参与方法选择或调参。
-- **完整方法菜单**：推荐方案只是预算内默认值，不代表系统只支持推荐列表中的方法。
-- **自动调参可审计**：候选空间、trial、选择指标、最佳参数和最终管线均写入合同文件。
-- **适配小样本光谱**：同时提供化学计量学、传统机器学习、可选 boosting 和需确认的实验深度模型。
-- **结果可追溯**：阶段间通过 JSON contract 和标准 CSV 交接，而不是依靠临时内存状态。
-- **论文级绘图**：输出可编辑 SVG/PDF、PNG 预览、源数据、图注、绘图代码和 QA 记录。
+## 中文说明
 
-## 工作流总览
+### 核心能力
 
-```text
-原始光谱文件或文件夹
-        |
-        v
-spectral-reader  ->  spectral-check  ->  spectral-splitter
-                                            |
-                                            v
-spectral-preprocess  ->  spectral-feature  ->  spectral-modeling
-        \                    |                       /
-         \                   v                      /
-          +---------- spectral-optimizer ----------+
-                               |
-                               v
-                        spectral-report
+- **光谱数据读取**：读取表格、工作簿、科学容器文件和逐样本文件夹，识别样本、标签、波段轴和元数据，生成统一的标准光谱数据包。
+- **光谱数据质量检查**：检查缺失值、非法值、异常样本候选、重复样本、波段风险、类别或目标值风险；默认只标记风险，不自动删除样本或波段。
+- **光谱数据划分**：支持训练集、验证集、测试集划分，交叉验证，重复划分，代表性划分和分组划分，并保存固定样本归属。
+- **光谱数据预处理**：支持散射校正、平滑、导数、基线校正、缩放、归一化、吸光度转换和波段裁剪。
+- **特征工程**：支持降维、变量选择、统计筛选、投影、信号变换、高维可视化和深度光谱表征。
+- **分类/回归建模**：支持传统机器学习、化学计量学模型、可选增强学习库、小样本自创模型和深度模型。
+- **预处理、特征工程和建模组合的自动优化**：在用户确认的方法范围和运行规模内，比较多种预处理、特征工程和模型组合，按照验证集或训练集内部交叉验证指标选择最终流程。
+- **科研绘图与报告输出**：读取各阶段结果，生成可编辑图件、预览图、源数据、图注、绘图代码和检查记录。
 
-spectral-workflow：负责路由、确认、合同传递与测试集隔离
-```
-
-典型分类链路：
+### 工作流程
 
 ```text
-读取标准包 -> 非破坏性质量检查 -> 分层划分 -> SNV -> PCA/VIP/全光谱 -> SVM/PLS-DA/模型比较 -> 最终测试 -> 论文图
+原始光谱数据
+    |
+    v
+光谱数据读取
+    |
+    v
+光谱数据质量检查
+    |
+    v
+光谱数据划分
+    |
+    v
+光谱数据预处理
+    |
+    v
+特征工程
+    |
+    v
+分类/回归建模
+    |
+    v
+最终测试评估与科研绘图
+
+预处理、特征工程和建模组合的自动优化可以在划分之后调用，
+统一比较多个候选组合，并把排名、参数和最终流程写入结果文件。
 ```
 
-典型回归链路：
+阶段之间通过标准表格文件和阶段说明文件交接，不依赖临时内存状态。每个阶段都会保存输入来源、处理参数、随机种子、结果文件和警告信息，便于后续复查和继续运行。
 
-```text
-读取标准包 -> 质量检查 -> Kennard-Stone/KFold -> MSC/SNV -> PLS-LV/SPA/CARS -> PLSR/SVR/集成回归 -> 最终测试 -> 回归图
-```
+### 九个核心技能
 
-## 九个 Skill 的详细能力
-
-### 1. `spectral-reader`：光谱数据读取与标准化
-
-将不同来源和布局的光谱数据转换为下游统一使用的标准数据包。它只负责“正确读入”，不做质量检查、插补、删样本、预处理或建模。
-
-**支持的输入格式**
-
-- 文本表格：CSV、TSV、TXT；
-- 工作簿：Excel、ODS；
-- 数组/科学容器：NPY、NPZ、MAT（非 v7.3）、HDF5、NetCDF；
-- 外部标签、目标值、元数据和独立波段轴文件；
-- 每个样本一个 CSV/TSV/TXT 文件的文件夹；
-- 含光谱、标签、元数据和波段轴候选文件的混合目录。
-
-**支持的数据布局**
-
-- 样本按行或经确认后样本按列；
-- 数值波长/波数列名，如 `350–2500 nm`、`3600–200 cm-1`；
-- 表头前有注释或仪器导出说明；
-- 光谱列前后夹有样本 ID、标签、目标值或元数据；
-- 多行表头、Excel 多 sheet、NPZ/MAT 变量选择、HDF5/NetCDF dataset path；
-- 按 `sample_id` 对齐外部标签，或经确认后按行序对齐；
-- 从文件名或文件夹名提取标签（必须显式要求）。
-
-**标准输出**
-
-| 文件 | 作用 |
-| --- | --- |
-| `X.csv` | 数值光谱矩阵，行是样本，列是波段 |
-| `y.csv` | 可选的分类标签或回归目标 |
-| `sample_ids.csv` | 样本唯一标识 |
-| `band_axis.csv` | 波长、波数或索引轴 |
-| `metadata.csv` | 可选样本元数据 |
-| `data_contract.json` | 数据形状、来源、单位、文件引用和警告 |
-
-遇到多个可解释的 sheet、变量、dataset、标签文件或样本方向时，skill 会要求最小必要确认，不会静默猜测。
-
-### 2. `spectral-check`：光谱质量检查
-
-读取标准数据包，先检查和标记问题；默认不删除样本或波段。只有用户确认动作、阈值和范围后，才进入 `clean` 模式。
-
-**默认综合检查**
-
-- 合同、文件、行列和波段轴一致性检查；
-- 缺失值、非数值、常量波段和低方差波段；
-- 类别样本量、类别不平衡和回归目标异常；
-- 光谱强度、粗糙度、尖峰和基线漂移风险；
-- 全局/类内平均光谱相似性；
-- 完全重复和近重复光谱；
-- PCA Hotelling T²、Q residual 和 PCA 空间 Mahalanobis 距离。
-
-**支持的异常样本方法**
-
-- 稳健 Z 分数（`robust_zscore` / robust Z-score）；
-- 四分位距（`iqr` / interquartile range）；
-- 中位数绝对偏差（`mad` / median absolute deviation）；
-- 均值相似性（`similarity_to_mean`）；
-- 类内相似性（`classwise_similarity`）；
-- 尖峰检测（`spike_detection`）；
-- 基线漂移评分（`baseline_drift_score`）；
-- PCA Hotelling T²（`pca_hotelling_t2`）；
-- Q 残差（`pca_q_residual`）；
-- PCA-Mahalanobis（`mahalanobis_on_pca`）；
-- 近重复检查（`near_duplicate_check`）；
-- 多方法共识（`multi_method_consensus`）；
-- 半采样异常稳定性（`half_resampling_outlier` / HR）；
-- 蒙特卡洛交叉验证异常稳定性（`mccv_outlier` / MCCV）。
-
-HR/MCCV 只在用户要求高级异常稳定性分析时运行；它们识别的是当前管线下的不稳定样本，不等同于自动判定“坏光谱”。
-
-**经确认后支持的清理动作**
-
-- 删除高置信异常样本；
-- 删除完全重复或近重复光谱，或输出分组建议交给 splitter；
-- 删除常量、高缺失率、严重低方差或高尖峰频率波段；
-- 波段均值/中位数插补、线性/最近邻插值；
-- Hampel、移动中位数或局部 MAD 尖峰修复；
-- 更新清理后的标准数据包和 `qc_cleaning_log.json`。
-
-主要输出为 `qc_result.json`；清理后还会生成 `cleaned_package/`，并通过 `next_package_for_downstream` 指向正确的下游输入。
-
-### 3. `spectral-splitter`：可复现数据划分
-
-在不复制光谱矩阵的情况下生成样本归属和划分合同，供后续所有阶段复用。
-
-| 中文名称 | 方法代码 / English name | 适用场景 |
+| 技能 | 中文职责 | 主要输出 |
 | --- | --- | --- |
-| 随机留出 | `random` / random holdout | 回归或无分层要求的普通留出 |
-| 分层留出 | `stratified` / stratified holdout | 分类任务，尽量保持类别比例 |
-| 预定义划分 | `predefined_split` / predefined split | 外部验证集或已有 split 列 |
-| K 折交叉验证 | `kfold` / K-fold CV | 常规交叉验证 |
-| 分层 K 折 | `stratified_kfold` / stratified K-fold CV | 小样本分类 |
-| 留一法 | `leave_one_out` / LOOCV | 极小样本的显式需求 |
-| 蒙特卡洛重复留出 | `monte_carlo_cv` / Monte Carlo CV | 重复随机评估 |
-| 重复随机划分 | `repeated_random_split` / repeated random split | 重复 holdout |
-| 分层蒙特卡洛 | `stratified_monte_carlo_cv` / stratified MCCV | 重复分类评估 |
-| Kennard–Stone | `kennard_stone` / Kennard–Stone split | 基于 X 空间覆盖的代表性划分 |
-| SPXY | `spxy` / SPXY split | 同时考虑 X 与连续 y 的回归划分 |
-| Duplex | `duplex` / Duplex split | 代表性 train/test 构造 |
-| 回归分箱分层 | `regression_stratified` / regression-binned split | 连续 y 分箱后分层 |
-| y 分箱分层 | `y_binned_stratified` / y-binned split | 连续 y 的分位数分箱 |
-| 分组划分 | `group` / group split | 同组样本不跨集合 |
-| 分组防泄漏划分 | `group_aware` / group-aware split | 批次、受试者或重复测量隔离 |
-| 分层分组划分 | `stratified_group` / stratified group split | 同时保持类别和组边界 |
+| `spectral-reader` | 光谱数据读取与标准化 | `X.csv`、`y.csv`、`sample_ids.csv`、`band_axis.csv`、`metadata.csv`、`data_contract.json` |
+| `spectral-check` | 光谱数据质量检查和确认后清理 | `qc_result.json`、`cleaned_package`、`qc_cleaning_log.json` |
+| `spectral-splitter` | 光谱数据划分 | `split_indices.csv`、`split_contract.json`、`split_summary.json` |
+| `spectral-preprocess` | 光谱数据预处理 | 预处理后的数据包、`preprocess_state.json`、`preprocess_contract.json` |
+| `spectral-feature` | 特征工程、降维和变量选择 | 特征数据包、`feature_state.json`、`feature_contract.json` |
+| `spectral-modeling` | 分类/回归建模、参数选择和最终评估 | 指标、预测结果、模型文件、建模说明文件 |
+| `spectral-optimizer` | 预处理、特征工程和建模组合的自动优化 | 候选组合清单、候选组合结果表、最佳流程、推荐报告 |
+| `spectral-report` | 科研绘图和报告输出 | 图件、源数据、图注、绘图代码、检查记录 |
+| `spectral-workflow` | 路线规划、阶段续跑和关键确认 | `workflow_plan.json`、`workflow_result.json` |
 
-输出：`split_indices.csv`、`split_contract.json` 和 `split_summary.json`。当前不宣称支持时间序列划分、按时间顺序划分或 nested CV。
+### 统一运行目录
 
-### 4. `spectral-preprocess`：防泄漏光谱预处理
-
-输入必须包含 `split_contract.json`。需要学习总体统计量的方法只在训练集拟合，然后应用到验证集和测试集；CV/重复留出时按 fold/repeat 重新拟合。
-
-**散射与趋势校正**
-
-- 无预处理（`none` / no preprocessing）；
-- 标准正态变量校正（`snv` / Standard Normal Variate）；
-- 多元散射校正（`msc` / Multiplicative Scatter Correction）；
-- 去趋势（`detrend` / detrending）；
-- SNV + 去趋势（`snv_detrend` / SNV plus detrending）。
-
-**平滑与导数**
-
-- Savitzky–Golay 平滑（`sg_smoothing`）；
-- 一阶导数（`first_derivative`）；
-- 二阶导数（`second_derivative`）；
-- 移动平均（`moving_average`）；
-- 高斯平滑（`gaussian_smoothing`）；
-- 中值滤波（`median_filter`）。
-
-**基线校正**
-
-- 线性基线（`linear_baseline`）；
-- 多项式基线（`polynomial_baseline`）；
-- 橡皮筋基线（`rubberband_baseline`）；
-- 非对称最小二乘基线（`als_baseline` / asymmetric least squares）。
-
-**缩放与归一化**
-
-- 均值中心化（`mean_centering`）；
-- 标准化（`standardization`）；
-- 最小–最大缩放（`minmax_scaling`）；
-- 鲁棒缩放（`robust_scaling`）；
-- Pareto 缩放（`pareto_scaling`）；
-- L2 归一化（`l2_normalization`）；
-- 面积归一化（`area_normalization`）；
-- 最大绝对值归一化（`max_abs_normalization`）。
-
-**物理转换与波段处理**
-
-- 反射率转吸光度（`reflectance_to_absorbance`）；
-- 透射率转吸光度（`transmittance_to_absorbance`）；
-- 对数变换（`log_transform`）；
-- 保留物理波段范围（`band_range_select`）；
-- 移除物理波段范围（`remove_band_ranges`）。
-
-MSC、中心化和缩放类方法属于 train-fit 方法。SG/导数、基线、吸光度转换和波段范围方法需要确认关键参数或物理含义。输出为新的标准包、`preprocess_state.json` 和 `preprocess_contract.json`。
-
-### 5. `spectral-feature`：特征工程、降维与变量选择
-
-每次执行一个特征方法。所有需要拟合的方法只用训练集；深度嵌入需额外确认训练预算和专属参数。
-
-#### 传统特征与化学计量方法
-
-| 中文名称 | 方法代码 / English name |
-| --- | --- |
-| 不做特征工程 | `none` / no feature engineering |
-| 主成分分析 | `pca` / Principal Component Analysis |
-| PLS 潜变量 | `pls_latent_variables` / PLS latent variables |
-| VIP 变量重要性 | `vip` / Variable Importance in Projection |
-| KBest 统计筛选 | `select_k_best` / SelectKBest |
-| SPA 连续投影算法 | `spa` / Successive Projections Algorithm |
-| CARS 竞争性自适应重加权采样 | `cars` / Competitive Adaptive Reweighted Sampling |
-| UVE 无信息变量剔除 | `uve` / Uninformative Variable Elimination |
-| MCUVE 蒙特卡洛 UVE | `mcuve` / Monte Carlo UVE |
-| 区间 PLS | `interval_pls` / interval PLS |
-| 相关性筛选 | `correlation_filter` / correlation filter |
-| ANOVA F 筛选 | `anova_f` / ANOVA F-test |
-| 回归 F 筛选 | `f_regression` / F-regression |
-| 方差阈值 | `variance_threshold` / variance threshold |
-| 指定波段范围 | `select_by_band_range` / select by band range |
-| 指定波段索引 | `select_by_band_indices` / select by band indices |
-
-#### 投影、信号变换与流形方法
-
-| 中文名称 | 方法代码 / English name | 说明 |
-| --- | --- | --- |
-| 核 PCA | `kernel_pca` / Kernel PCA | 非线性投影 |
-| 稀疏 PCA | `sparse_pca` / Sparse PCA | 稀疏载荷 |
-| 非负矩阵分解 | `nmf` / NMF | 输入必须非负 |
-| 独立成分分析 | `ica_embedding` / ICA | 独立成分投影 |
-| LDA 监督投影 | `lda_projection` / LDA projection | 分类监督降维 |
-| DCT 特征 | `dct_features` / Discrete Cosine Transform | 确定性逐样本变换 |
-| FFT 特征 | `fft_features` / Fast Fourier Transform | 确定性频域特征 |
-| 字典学习 | `dictionary_learning` / Dictionary Learning | 稀疏字典表示 |
-| Isomap 嵌入 | `isomap_embedding` / Isomap | 默认探索用途；建模需确认 |
-| LLE 嵌入 | `lle_embedding` / Locally Linear Embedding | 默认探索用途；建模需确认 |
-| t-SNE 嵌入 | `tsne_embedding` / t-SNE | 仅用于可视化，不进入性能证明 |
-| UMAP 嵌入 | `umap_embedding` / UMAP | 默认探索用途；建模需确认 |
-
-#### 深度光谱嵌入
-
-| 中文名称 | 方法代码 / English name | 方法专属确认 |
-| --- | --- | --- |
-| 自编码器嵌入 | `autoencoder_embedding` / Autoencoder embedding | 维度、训练轮数等 |
-| 去噪自编码器嵌入 | `denoising_autoencoder_embedding` / Denoising AE | `noise_std` |
-| 一维 CNN 光谱嵌入 | `cnn_1d_embedding` / 1D CNN spectral embedding | 网络预算与正则化 |
-| ResNet1D 光谱嵌入 | `resnet1d_embedding` / ResNet1D embedding | 小样本过拟合风险 |
-| CLS-former 光谱嵌入 | `cls_former_embedding` / CLS-former embedding | `patch_size` |
-| 掩码光谱自编码器嵌入 | `masked_spectral_autoencoder_embedding` / Masked spectral AE | `mask_ratio`, `patch_size` |
-| 对比光谱嵌入 | `contrastive_spectral_embedding` / Contrastive spectral embedding | `temperature` 和增强强度 |
-
-深度方法会确认 `n_components`、`epochs`、`batch_size`、`learning_rate`、`weight_decay`、随机种子、设备和方法专属参数。用于分类的嵌入建议比较 8/16/32 维；2 维通常只用于可视化。视觉分离不能代替分类或回归指标。
-
-输出为新的标准包、`feature_state.json` 和 `feature_contract.json`，并保留选中波段、载荷、训练审计等可追溯信息。
-
-### 6. `spectral-modeling`：分类、回归、模型比较与调参
-
-输入可以是 split 后的标准包、`preprocess_contract.json` 或 `feature_contract.json`。模型只在训练集拟合，使用验证集或训练集内部 CV 选模型/参数，锁定后才访问测试集。
-
-#### 分类模型
-
-**传统机器学习与化学计量分类器**
-
-- 逻辑回归（`logistic_regression` / Logistic Regression）；
-- 线性 SVM（`linear_svm` / Linear SVM）；
-- RBF 支持向量机（`svm` / RBF-SVM）；
-- 线性判别分析（`lda` / Linear Discriminant Analysis）；
-- 二次判别分析（`qda` / Quadratic Discriminant Analysis）；
-- 高斯朴素贝叶斯（`gaussian_nb` / Gaussian Naive Bayes）；
-- PLS-DA（`pls_da` / Partial Least Squares Discriminant Analysis）；
-- SIMCA（`simca` / Soft Independent Modeling of Class Analogy）；
-- K 近邻（`knn_classifier` / KNN classifier）；
-- 随机森林（`random_forest_classifier` / Random Forest classifier）；
-- Extra Trees（`extra_trees_classifier` / Extra Trees classifier）；
-- 梯度提升（`gradient_boosting_classifier` / Gradient Boosting classifier）；
-- 多层感知机（`mlp_classifier` / MLP classifier）。
-
-**可选依赖 boosting 分类器**
-
-- XGBoost（`xgboost_classifier`）；
-- LightGBM（`lightgbm_classifier`）；
-- CatBoost（`catboost_classifier`）。
-
-**实验性小样本深度/概率分类器**
-
-- 深核学习高斯过程分类器（`spectral_dkl_gp_classifier` / spectral DKL-GP classifier）；
-- 原型光谱分类器（`proto_spectral_classifier` / prototypical spectral classifier）；
-- CLS-former 分类器（`cls_former_classifier` / CLS-former classifier）；
-- CLS-former 嵌入 + SVM（`cls_former_embedding_svm` / CLS-former embedding SVM）。
-
-常用快速比较集 `regular-fast` 包含：逻辑回归、线性 SVM、RBF-SVM、LDA、KNN、随机森林和 Extra Trees。它是速度与覆盖面的默认折中，不包含 QDA、Gaussian NB、PLS-DA、SIMCA、Gradient Boosting、MLP、可选 boosting 或实验深度模型；这些方法仍可通过自定义列表或更完整的比较方案纳入。
-
-#### 回归模型
-
-**传统机器学习与化学计量回归器**
-
-- PLS 回归（`plsr` / Partial Least Squares Regression）；
-- 主成分回归（`pcr` / Principal Component Regression）；
-- 线性回归（`linear_regression` / Linear Regression）；
-- 岭回归（`ridge` / Ridge Regression）；
-- Lasso（`lasso` / Lasso Regression）；
-- 弹性网络（`elastic_net` / Elastic Net）；
-- 贝叶斯岭回归（`bayesian_ridge` / Bayesian Ridge）；
-- 支持向量回归（`svr` / Support Vector Regression）；
-- K 近邻回归（`knn_regressor` / KNN regressor）；
-- 随机森林回归（`random_forest_regressor`）；
-- Extra Trees 回归（`extra_trees_regressor`）；
-- 梯度提升回归（`gradient_boosting_regressor`）；
-- 高斯过程回归（`gpr` / Gaussian Process Regression）。
-
-**可选依赖回归器**：`xgboost_regressor`、`lightgbm_regressor`、`catboost_regressor`。
-
-**实验性小样本回归器**：`spectral_dkl_gp_regressor`、`proto_spectral_regressor`、`cls_former_regressor`。
-
-#### 自动调参和评估模式
-
-- **固定参数**：使用用户给定或明确默认参数，适合快速基线和公平固定参数比较；
-- **分类器/回归器内部调参**：只改变模型参数，使用验证集或训练集内部 CV；
-- **validation-only**：只输出 train/validation 指标，不访问 test，适合 optimizer trial；
-- **最终锁定测试**：模型和参数锁定后评估一次 test；
-- **confirmatory test**：测试集已被查看时，明确标注为确认性结果而非完全盲测；
-- **重复划分/CV**：按 fold/repeat 重拟合并汇总，不把多次结果误称为单次最终测试。
-
-自动调参不会替用户自动改变上游预处理或特征方法；跨阶段调优属于 `spectral-optimizer`。实验模型需要显式确认训练预算和关键参数。
-
-**主要输出**
-
-- `modeling_contract.json`、`modeling_summary.json`、`metrics.json`；
-- `predictions.csv`、`model_artifact.pkl`；
-- 多分类器验证比较表 `classifier_validation_summary.csv`，逐行记录 train/validation accuracy、balanced accuracy、Macro-F1、AUC、参数和 `test_accessed`；
-- 分类可选 `confusion_matrix.csv`；
-- 不确定性模型可选 `prediction_std.csv`、`uncertainty_summary.json`；
-- 多分类器验证比较输出每个模型的 train/validation 指标、参数和 `test_accessed` 状态。
-
-### 7. `spectral-optimizer`：受预算约束的自动优化
-
-optimizer 负责“规划候选、调用官方子 skill、比较验证/CV 结果、选择最佳管线”，不自行重写预处理、特征或模型算法。
-
-**四种模式**
-
-| 模式 | 功能 |
-| --- | --- |
-| `recommend_from_profile` | 只根据样本量、特征量、任务和类别结构推荐候选，不运行模型 |
-| `tune_method` | 固定其他阶段，仅调一个方法的参数 |
-| `compare_step` | 固定上下游，比较预处理、特征或模型中的一个阶段 |
-| `optimize_pipeline` | 在确认的方法空间和 trial 预算内联合搜索多阶段管线 |
-
-**三层调参强度**
-
-- **Level 1：仅模型参数调优**。固定预处理和特征，只调分类器/回归器；
-- **Level 2：传统特征 + 模型调优**。比较 PCA、PLS-LV、VIP、KBest、SPA 等参数与下游模型；
-- **Level 3：深度嵌入 + 模型调优**。比较嵌入维度、训练参数和下游模型，计算预算大，必须先预览、裁剪并确认。
-
-**安全规则**
-
-- 必须明确候选方法、参数网格、选择指标和 `max_trials`；
-- 所有 trial 使用 validation 或 train-only CV，禁止按 test 指标选方法；
-- 平分时优先更简单预处理、更少输出特征、更少调参和更低计算成本；
-- `best_pipeline.json` 保存 preprocess + feature + model 的完整 lineage；
-- 最佳管线锁定后才可单独确认最终测试；
-- 小 holdout 的高分建议用 5/10 次 repeated holdout 复核稳定性。
-
-输出：`optimizer_contract.json`、`optimization_plan.json`、`candidate_space.json`、`trial_manifest.csv`、执行后可选 `trial_results.csv`、`best_pipeline.json` 和 `recommendation_report.md`。
-
-### 8. `spectral-report`：论文级图表与可复现报告
-
-从 reader、check、splitter、preprocess、feature、modeling 或 optimizer 的现有产物生成图表；不重新训练模型，不编造重复实验、误差条、显著性或单位。
-
-**支持的图表类型**
-
-- 原始/预处理光谱、均值与真实离散带；
-- 波段选择、VIP、载荷、系数和潜变量解释图；
-- PCA、UMAP、t-SNE、深度嵌入散点图；
-- 分类器指标比较、重复实验箱线图/点范围图；
-- 混淆矩阵、ROC、PR、校准曲线；
-- 回归预测值–实测值、1:1 线、残差图和指标面板；
-- optimizer 候选排名、trial landscape 和锁定管线性能；
-- 现有图片的审计与重绘。
-
-**默认论文风格**
-
-- 白底、无网格、完整黑色全边框；
-- Times New Roman；
-- 低饱和、高区分度论文配色，不默认高饱和纯色或 hatch；
-- 多面板统一使用外置小写标签 `(a)`, `(b)`, …；
-- 柱状图从零开始，单次 holdout 不伪造误差条；
-- 重复结果展示真实 folds/repeats 的分布、mean ± SD 或合适的不确定性；
-- caption 说明数据分区、统计单位、重复定义和图形编码；
-- embedding 坐标不能跨方法直接比较，视觉分离不能作为分类性能证据。
-
-**图件包输出**
+同一次分析产生的文件会收敛到一个运行目录下，避免在原始数据旁边散落多个中间文件夹。
 
 ```text
-report_contract.json
-figures/*.svg
-figures/*.pdf
-figures/*.png
-source_data/*.csv
-code/*.py
-captions/*.md
-qa/*.md
+spectral_runs/
+└── 数据集名称/
+    └── 运行名称/
+        ├── reader_package/
+        ├── qc_output/
+        ├── split_output/
+        ├── preprocess_output/
+        ├── feature_output/
+        ├── model_output/
+        ├── optimizer_output/
+        ├── report_output/
+        ├── logs/
+        ├── workflow_plan.json
+        └── workflow_result.json
 ```
 
-每张图必须经过尺寸、裁切、字体、图例、全边框、网格、数据追溯和最终渲染 QA。
+### 关键原则
 
-### 9. `spectral-workflow`：多阶段路由与合同编排
+- 测试集只在最终流程锁定后访问一次，用于最终泛化能力评估。
+- 需要从数据中学习统计量或参数的方法只在训练集上拟合，再应用到验证集和测试集。
+- 自动优化必须先确认候选方法范围、参数范围、运行规模和选择指标。
+- 深度特征和自创小样本模型可以进入同一个组合优化过程，与预处理和特征工程方法一起比较，而不是单独运行后手工拼接结果。
+- 可比较的方法范围、每一次候选组合运行记录、选择指标、最佳参数和最终处理流程都会写入结果文件。
 
-根据用户目标选择最小的 child skill 链，保存决策并传递合同。它负责流程，不重复实现各阶段算法。
+---
 
-**支持的典型路线**
+## 方法池
 
-- 只读取和质量检查；
-- 推荐分类/回归基线；
-- 手动逐阶段选择；
-- 预处理、特征或分类器单阶段比较；
-- 传统多阶段优化；
-- 深度嵌入 + 传统模型；
-- 实验性端到端小样本模型；
-- 已有中间 contract 续跑；
-- 从结果合同路由到论文绘图。
+### 光谱数据读取方法池
 
-当用户只说“处理这个光谱数据”时，workflow 先只读检查数据结构，再给出路线选择，不会立即替用户运行任意模型。进入手动流程后，每个阶段应显示“推荐项 + 完整支持菜单 + 可执行选择示例”。
+| 方法类别 | 方法 | 适用场景 | 公开/自创 |
+| --- | --- | --- | --- |
+| 文本与工作簿 | CSV、TSV、TXT、Excel、ODS | 常见仪器导出表、表头前含注释、多工作表文件 | 公开方法 |
+| 科学容器 | NPY、NPZ、MAT、HDF5、NetCDF | 矩阵、变量或数据集路径形式的数据 | 公开方法 |
+| 标签与元数据 | 外部标签对齐、目标值读取、元数据读取、波段轴读取 | 标签、目标值、样本信息与光谱分开存放 | 自创方法 |
+| 逐样本目录 | 每个样本一个文件、从文件名或目录名提取标签 | 样本以文件夹形式组织 | 自创方法 |
+| 布局识别 | 样本行/列识别、多行表头识别、连续数值波段块识别 | 光谱列前后夹杂样本编号、标签、目标值或元数据 | 自创方法 |
+| 标准输出 | 标准光谱数据包 | 统一交给后续质量检查、划分、预处理和建模使用 | 自创方法 |
 
-**合同链**
+### 光谱数据质量检查方法池
 
-| 阶段 | 主要输入 | 主要合同/输出 |
-| --- | --- | --- |
-| Reader | 原始文件/文件夹 | `data_contract.json` |
-| Check | 标准数据包 | `qc_result.json`，可选清理包 |
-| Splitter | 标准数据包 | `split_contract.json` |
-| Preprocess | 数据合同 + 划分合同 | `preprocess_contract.json` |
-| Feature | 数据/预处理合同 + 划分合同 | `feature_contract.json` |
-| Modeling | 数据/预处理/特征合同 + 划分合同 | `modeling_contract.json` |
-| Optimizer | 已确认候选空间 + 上游合同 | `optimizer_contract.json`, `best_pipeline.json` |
-| Report | 任一已存在结果合同 | `report_contract.json` + 图件包 |
-| Workflow | 用户目标 + 各阶段合同 | `workflow_plan.json`, `workflow_result.json` |
+| 方法类别 | 方法 | 适用场景 | 公开/自创 |
+| --- | --- | --- | --- |
+| 基础完整性 | 文件一致性、行列一致性、缺失值、非法值、类别数量、目标值异常、常量波段、低方差波段 | 检查标准数据包是否可以进入后续分析 | 自创方法 |
+| 稳健统计 | 稳健 Z 分数、四分位距、中位数绝对偏差 | 统计摘要层面的异常候选识别 | 公开方法 |
+| 相似性检查 | 均值相似性、类内相似性 | 发现全局或类内谱形偏离 | 自创方法 |
+| 谱形风险 | 尖峰检测、基线漂移评分 | 局部突变、仪器尖峰和慢变背景风险 | 自创方法 |
+| 主成分异常 | Hotelling T²、Q 残差、主成分空间马氏距离 | 多变量空间异常候选 | 公开方法 |
+| 重复风险 | 完全重复、近重复检查 | 重复样本、标签冲突和潜在划分问题 | 自创方法 |
+| 稳定性异常 | 多方法共识、半采样异常、蒙特卡洛交叉验证异常 | 高级不稳定样本分析，不自动等同坏光谱 | 自创方法 |
+| 确认后清理 | 删除样本或波段、均值/中位数插补、线性/最近邻插值、Hampel 修复、局部中位数绝对偏差修复 | 用户确认动作、阈值和范围后执行 | 公开方法 |
 
-## 安装
+### 光谱数据划分方法池
 
-### Codex 插件市场
+| 方法类别 | 方法 | 适用场景 | 公开/自创 |
+| --- | --- | --- | --- |
+| 留出法 | 随机留出、分层留出 | 普通训练/验证/测试划分；分类任务保持类别比例 | 公开方法 |
+| 指定集合 | 预定义划分 | 已有划分列、外部验证集或指定样本 | 公开方法 |
+| 交叉验证 | K 折、分层 K 折、留一法 | 常规评估、小样本分类、极小样本评估 | 公开方法 |
+| 重复评估 | 蒙特卡洛交叉验证、重复随机划分、分层蒙特卡洛交叉验证 | 重复随机评估和分类比例保持 | 公开方法 |
+| 代表性划分 | Kennard-Stone、SPXY、Duplex | 覆盖光谱空间、兼顾连续目标值或构造代表性训练/测试集合 | 公开方法 |
+| 连续目标分层 | 回归分箱分层、目标值分箱分层 | 将连续目标值划分为区间后保持分布 | 自创方法 |
+| 组隔离 | 分组划分、组感知划分、分层分组划分 | 批次、受试者或重复测量样本不能跨集合 | 公开方法 |
 
-Before importing or enabling the plugin, validate the user-level Codex config:
+### 光谱数据预处理方法池
 
-```bash
-python install/check_codex_config.py --json
-```
+| 方法类别 | 方法 | 适用场景 | 公开/自创 |
+| --- | --- | --- | --- |
+| 散射与趋势校正 | 无预处理、标准正态变量校正、多元散射校正、去趋势、标准正态变量校正加去趋势 | 散射差异、基线趋势和显式基线对照 | 公开方法 |
+| 平滑与导数 | Savitzky-Golay 平滑、一阶导数、二阶导数、移动平均、高斯平滑、中值滤波 | 降噪、峰形增强和局部异常抑制 | 公开方法 |
+| 基线校正 | 线性基线、多项式基线、橡皮筋基线、非对称最小二乘基线 | 慢变背景和荧光基线校正 | 公开方法 |
+| 缩放与归一化 | 均值中心化、标准化、最小最大缩放、稳健缩放、帕累托缩放、L2 归一化、面积归一化、最大绝对值归一化 | 统一量纲、样本强度或面积 | 公开方法 |
+| 物理转换与波段处理 | 反射率转吸光度、透射率转吸光度、对数变换、波段范围选择、指定波段范围删除 | 吸光度转换和物理波段裁剪 | 公开方法 |
 
-If Codex reports `Could not load config.toml` or `unclosed table, expected ]`,
-the failing file is `~/.codex/config.toml`, not the Spectral Skills runtime.
-Plugin import makes Codex reload global config, so an old malformed
-`[projects.'...']` entry can surface at that moment. Fix or remove the malformed
-table, rerun the preflight, and then retry plugin import.
+### 特征工程方法池
 
-```bash
-codex plugin marketplace add https://github.com/XY041216/spectral-skills.git --ref main
-codex plugin add spectral-skills@spectral-skills-local-marketplace
-```
+| 方法类别 | 方法 | 适用场景 | 公开/自创 |
+| --- | --- | --- | --- |
+| 基础降维与解释 | 无特征工程、主成分分析、偏最小二乘潜变量、变量投影重要性 | 降维、潜变量表达和变量解释 | 公开方法 |
+| 统计筛选 | KBest、方差分析 F 检验、回归 F 检验、方差阈值筛选 | 分类/回归单变量筛选和低方差剔除 | 公开方法 |
+| 投影选波段 | 连续投影算法、竞争性自适应重加权采样 | 降低共线性并选择关键波段组合 | 公开方法 |
+| 无信息剔除 | 无信息变量剔除、蒙特卡洛无信息变量剔除 | 基于稳定性剔除无信息变量 | 公开方法 |
+| 区间方法 | 区间偏最小二乘 | 按连续谱段比较局部信息 | 公开方法 |
+| 相关筛选 | 相关性筛选 | 按标签或目标值相关性筛选变量 | 公开方法 |
+| 物理指定 | 波段范围选择、波段索引选择 | 有明确先验波段或需要复现实验波段 | 公开方法 |
+| 非线性与稀疏投影 | 核主成分分析、稀疏主成分分析 | 非线性投影和稀疏载荷 | 公开方法 |
+| 矩阵与监督投影 | 非负矩阵分解、独立成分分析、线性判别投影 | 非负表达、独立成分和监督降维 | 公开方法 |
+| 信号变换 | 离散余弦变换、快速傅里叶变换 | 频域或压缩域逐样本特征 | 公开方法 |
+| 稀疏表示 | 字典学习 | 稀疏字典表示和局部谱形组合 | 公开方法 |
+| 高维可视化 | Isomap、局部线性嵌入、t-SNE、UMAP | 非线性结构探索；二维图只用于观察结构 | 公开方法 |
+| 深度基础表征 | 自编码器、去噪自编码器、一维卷积网络、ResNet1D 光谱嵌入 | 非线性、去噪、卷积和残差表征 | 公开方法 |
+| 项目深度扩展 | CLS-former、掩码光谱自编码器、对比光谱嵌入 | 小样本光谱表征，需要确认训练规模和过拟合风险 | 自创方法 |
 
-If the Codex CLI cannot run on Windows, or if the marketplace/plugin entries
-exist in `config.toml` but no `spectral-skills` folder appears under
-`%USERPROFILE%\.codex\plugins\cache`, run the local installer from the clone
-root:
+### 分类建模方法池
 
-```bash
-python install/install_codex_plugin.py --json
-```
+| 方法类别 | 方法 | 适用场景 | 公开/自创 |
+| --- | --- | --- | --- |
+| 线性与判别模型 | 逻辑回归、线性支持向量机、线性判别分析、二次判别分析 | 快速基线、低样本和可解释分类 | 公开方法 |
+| 核方法与邻域方法 | 径向基支持向量机、K 近邻分类器 | 非线性边界和邻域分类 | 公开方法 |
+| 概率与化学计量模型 | 高斯朴素贝叶斯、偏最小二乘判别分析、软独立建模分类 | 概率基线、偏最小二乘判别和类别建模 | 公开方法 |
+| 树集成 | 随机森林、极端随机树、梯度提升分类器 | 非线性变量交互和稳健基线 | 公开方法 |
+| 可选增强模型 | XGBoost、LightGBM、CatBoost 分类器 | 安装可选依赖后的强基线 | 公开方法 |
+| 神经网络 | 多层感知机分类器 | 小规模非线性模型比较 | 公开方法 |
+| 项目小样本扩展 | 深度核学习高斯过程分类器、原型光谱分类器、CLS-former 分类器、CLS-former 嵌入加支持向量机 | 小样本光谱的概率、原型和轻量 Transformer 分类 | 自创方法 |
 
-It validates `config.toml`, writes a backup before changing it, enables the
-local marketplace, and materializes the release image into Codex's plugin cache:
+### 回归建模方法池
 
-```text
-%USERPROFILE%\.codex\plugins\cache\spectral-skills-local-marketplace\spectral-skills\<version>\
-```
+| 方法类别 | 方法 | 适用场景 | 公开/自创 |
+| --- | --- | --- | --- |
+| 化学计量模型 | 偏最小二乘回归、主成分回归 | 高维共线光谱的主力回归基线 | 公开方法 |
+| 线性与正则模型 | 线性回归、岭回归、Lasso、弹性网、贝叶斯岭回归 | 快速可解释、稀疏或稳定回归 | 公开方法 |
+| 核方法、邻域方法与概率模型 | 支持向量回归、K 近邻回归、高斯过程回归 | 非线性、邻域和不确定性回归 | 公开方法 |
+| 树集成 | 随机森林回归、极端随机树回归、梯度提升回归 | 非线性关系和变量交互 | 公开方法 |
+| 可选增强模型 | XGBoost、LightGBM、CatBoost 回归器 | 安装可选依赖后的强基线 | 公开方法 |
+| 项目小样本扩展 | 深度核学习高斯过程回归器、原型光谱回归器、CLS-former 回归器 | 小样本光谱的概率、原型和 Transformer 回归扩展 | 自创方法 |
+| 评价输出 | 决定系数、平均绝对误差、均方根误差、平均绝对百分比误差、不确定性摘要 | 回归性能评价、预测导出和不确定性报告 | 公开方法 |
 
-Restart Codex in a new thread after the installer reports success.
+### 自动优化方法池
 
-Codex Desktop 也可添加自定义插件市场：
+| 方法类别 | 方法 | 适用场景 | 公开/自创 |
+| --- | --- | --- | --- |
+| 候选推荐 | 按数据画像推荐 | 依据样本量、特征量、任务类型和类别分布给出推荐路线，不运行模型 | 自创方法 |
+| 单方法调参 | 固定上下游，只调整一个方法的参数 | 用户只想比较一个方法的参数范围 | 自创方法 |
+| 单阶段比较 | 固定上下游，只比较预处理、特征或模型中的一个阶段 | 用户想知道某一阶段哪个方法更合适 | 自创方法 |
+| 多阶段优化 | 联合搜索预处理、特征工程和建模组合 | 在用户确认的候选范围和运行规模内选择最佳流程 | 自创方法 |
+| 仅模型参数调优 | 固定预处理和特征，仅调分类器或回归器 | 先做快速模型基线 | 自创方法 |
+| 传统特征加模型调优 | 比较主成分、偏最小二乘潜变量、变量投影重要性、KBest、连续投影算法等 | 传统光谱建模组合比较 | 自创方法 |
+| 深度光谱表征加模型调优 | 比较深度嵌入维度、训练参数和下游模型 | 需要明确确认训练规模和计算成本 | 自创方法 |
 
-- Marketplace source：`https://github.com/XY041216/spectral-skills.git`
-- Branch/ref：`main`
-- Plugin：`spectral-skills`
+---
 
-仓库根目录同时提供 `.codex-plugin/plugin.json` 和 `.mcp.json`，作为 GitHub
-插件导入入口；该入口会把 Codex skills 指向已构建的
-`plugins/spectral-skills/skills` 发布镜像，而不是根目录下的开发源 `skills/`。
+## 演示效果图
 
-不要使用 Codex 的 **GitHub skill installer** 直接从仓库导入子 skill。Spectral
-Skills 是一个插件发布单元，不是一组可以独立安装的 skill 文件夹；如果导入日志里出现
-`skill-installer` 或 `install-skill-from-github.py --repo XY041216/spectral-skills`，
-应停止该流程并改用上面的插件市场安装命令。直接 skill 安装会丢失插件元数据、MCP
-配置、共享运行时和发布检查，不是受支持的发行形态。
+以下图片来自项目终期 PPT 的实际运行演示材料，用于展示 `spectral-report` 和流程结果的输出形式。
 
-安装后开启新会话，例如：
+### 运行目录结构
 
-```text
-使用 $spectral-skills:spectral-workflow 处理 Tablet_ext_0-3.csv：
-读取、质量检查、分层 6:2:2 划分、SNV、feature=none，并比较 SVM 与 PLS-DA。
-```
+![运行目录结构](docs/images/workflow-output-structure.png)
 
-### Claude-compatible agents
+### 不同分类器精度对比
 
-仓库在 `.claude-plugin/` 中提供 Claude-compatible plugin metadata：
+![不同分类器精度对比](docs/images/classifier-accuracy-comparison.png)
 
-```bash
-claude plugin marketplace add XY041216/spectral-skills
-claude plugin install spectral-skills@spectral-skills
-```
+### 十次独立训练的分类器精度箱线图
 
-不支持插件市场的智能体可以 clone 仓库，并将 `plugins/spectral-skills/` 与相应 `SKILL.md` 作为技能入口。`shared/`、`spectral_core/` 和 `scripts/` 必须与 skills 一同保留。
+![十次独立训练的分类器精度箱线图](docs/images/classifier-repeated-boxplot.png)
 
-### 本地脚本运行
+### 二维数据分布可视化
 
-```bash
-git clone https://github.com/XY041216/spectral-skills.git
-cd spectral-skills
-pip install -r requirements.txt
-```
+![二维数据分布可视化](docs/images/embedding-2d-visualization.png)
 
-示例：
+---
 
-```bash
-python plugins/spectral-skills/skills/spectral-workflow/scripts/run_spectral_workflow.py \
-  --input path/to/data.csv \
-  --output-dir outputs/workflow_demo \
-  --task-goal classification \
-  --split-ratio 6:2:2 \
-  --preprocess-methods snv \
-  --feature-method none \
-  --models svm \
-  --json
-```
+## 安装与使用
 
-本地 marketplace 配置见 [`install.md`](install.md)。
-
-## 可选依赖
-
-基础依赖见 `requirements.txt`。以下路径需要对应本地依赖：
-
-- UMAP：`umap-learn`；
-- 深度嵌入和实验深度模型：PyTorch；
-- XGBoost：`xgboost`；
-- LightGBM：`lightgbm`；
-- CatBoost：`catboost`。
-
-缺少可选依赖时，相关方法会阻止执行并说明缺失项，不会静默替换成其他算法。
-
-## 使用示例
-
-```text
-用 spectral-reader 把这个 Excel 光谱文件转成标准数据包，样本在行，标签在 Sheet2。
-```
-
-```text
-对标准光谱包做非破坏性质量检查，标记尖峰、基线漂移、重复光谱和 PCA T²/Q 异常候选，不删除样本。
-```
-
-```text
-使用 stratified_monte_carlo_cv 做 10 次 7:3 重复分类器比较，固定 SNV + PCA(10)，比较 regular-fast 模型并绘图。
-```
-
-```text
-比较 PCA(10)、PLS-LV(3)、VIP(100)、KBest(80)、SPA(80)，使用验证集 Macro-F1 选择，不访问测试集。
-```
-
-```text
-训练 8/16/32 维 contrastive spectral embedding，并在训练/验证内部调 SVM；锁定组合后再确认最终测试。
-```
-
-```text
-根据 modeling_contract 生成分类比较图、混淆矩阵、source data、caption 和 figure QA。
-```
-
-## 仓库结构
-
-```text
-.agents/                         Codex marketplace metadata
-.codex-plugin/                   GitHub plugin-import entrypoint for Codex
-.mcp.json                        Root MCP entrypoint delegated to the plugin image
-.claude-plugin/                  Claude-compatible metadata
-install/                         plugin 构建与发布检查
-plugins/spectral-skills/         发布用插件镜像（由构建脚本生成）
-skills/                          开发源；不是 Codex 发布安装入口
-spectral_core/                   共享运行时实现
-scripts/                         统一 CLI/runtime 脚本
-README.md                        面向用户的完整能力说明
-install.md                       安装细节
-```
-
-开发源位于 `skills/` 和 `spectral_core/`；`plugins/spectral-skills/` 是生成的
-Codex/Claude 发布镜像，不应手工编辑。发布前运行 `install/build_codex_plugin.py`
-重新生成根插件入口和发布镜像，并用 `install/check_codex_plugin.py` 验证。
-
-## 能力边界与科学解释
-
-- 不静默删除样本、波段或标签；
-- 不使用测试集选择预处理、特征、模型或超参数；
-- 不启动未确认、无预算上限的 AutoML；
-- 不把二维 embedding 的视觉分离当作分类性能；
-- 不把单次 holdout 结果描述成 repeated holdout 或稳定性结论；
-- 不编造误差条、显著性、置信区间、重复次数或波段单位；
-- 不直接读取未导出的专有仪器二进制格式；应先导出为受支持的表格或容器格式。
-
-## 开发与发行检查
-
-在仓库根目录运行：
+### 从 GitHub 安装到 Codex
 
 ```powershell
-python -m pytest -q
-python install/build_codex_plugin.py --clean --verify --json
-python install/check_codex_plugin.py --json
+python "$HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py" --repo XY041216/spectral-skills --path plugins/spectral-skills
 ```
 
-发布前不要提交缓存目录、临时输出、本地虚拟环境、调试档案或临时 QA 运行。修改源 skill 后，应重新构建插件镜像，确保开发源与公开插件一致。
+也可以克隆仓库后在本地检查插件：
 
-## License
+```powershell
+git clone https://github.com/XY041216/spectral-skills.git
+cd spectral-skills
+python install\check_codex_plugin.py --json
+```
 
-本项目使用 [MIT License](LICENSE)。
+### 典型使用方式
+
+用户可以直接在智能体环境中描述任务，例如：
+
+```text
+处理这个光谱数据 "E:\data\Tablet_ext_0-3.csv"
+```
+
+系统读取后会给出下一步路线，例如推荐基线、只做质量检查、逐阶段手动选择方法、预处理/特征工程/建模组合的自动优化、深度模型实验和可视化探索。用户确认路线后再继续执行。
+
+---
+
+## English Version
+
+Spectral Skills is a spectral data analysis plugin system for agent environments such as Codex and Claude. It covers spectral data reading, spectral data quality checking, spectral data splitting, spectral data preprocessing, feature engineering, classification/regression modeling, automated optimization of preprocessing-feature-modeling combinations, and scientific figure/report generation.
+
+The system is designed for transparent and reproducible analysis. It pauses for user confirmation at key points such as sample orientation, label alignment, suspicious sample handling, split strategy, preprocessing parameters, candidate method ranges, optimization scale, and final test evaluation. The test set is used only after the processing pipeline and model parameters are locked; it is not used for method selection or parameter tuning.
+
+### Main Capabilities
+
+- **Spectral data reading**: read tables, spreadsheets, scientific containers, and one-file-per-sample folders; identify samples, labels, band axes, and metadata; produce a standard spectral data package.
+- **Spectral data quality checking**: check missing values, illegal values, suspicious outliers, duplicate samples, band risks, and class or target risks; mark issues by default instead of deleting samples or bands automatically.
+- **Spectral data splitting**: create reproducible train/validation/test splits, cross-validation folds, repeated splits, representative splits, and group-aware splits.
+- **Spectral data preprocessing**: support scatter correction, smoothing, derivatives, baseline correction, scaling, normalization, absorbance conversion, and band selection.
+- **Feature engineering**: support dimensionality reduction, variable selection, statistical filtering, projection, signal transforms, high-dimensional visualization, and deep spectral embeddings.
+- **Classification/regression modeling**: support traditional machine learning, chemometric models, optional boosting libraries, self-developed small-sample models, and deep models.
+- **Automated optimization of preprocessing-feature-modeling combinations**: compare confirmed combinations under a confirmed run scale, then select the final pipeline by validation or train-only cross-validation metrics.
+- **Scientific figures and reports**: generate editable figures, preview images, source data, captions, plotting code, and inspection records.
+
+### Workflow
+
+```text
+Raw spectral data
+    |
+    v
+Spectral data reading
+    |
+    v
+Spectral data quality checking
+    |
+    v
+Spectral data splitting
+    |
+    v
+Spectral data preprocessing
+    |
+    v
+Feature engineering
+    |
+    v
+Classification/regression modeling
+    |
+    v
+Final test evaluation and scientific reporting
+
+Automated optimization of preprocessing-feature-modeling combinations can be
+called after splitting. It ranks confirmed candidate combinations and records
+the selected parameters and final pipeline.
+```
+
+Stages exchange standard CSV files and stage description files instead of relying on temporary in-memory state. Each stage records input sources, processing parameters, random seeds, output files, and warnings so that the analysis can be inspected and resumed.
+
+### Core Skills
+
+| Skill | Responsibility | Main outputs |
+| --- | --- | --- |
+| `spectral-reader` | Spectral data reading and standardization | `X.csv`, `y.csv`, `sample_ids.csv`, `band_axis.csv`, `metadata.csv`, `data_contract.json` |
+| `spectral-check` | Spectral data quality checking and confirmed cleaning | `qc_result.json`, `cleaned_package`, `qc_cleaning_log.json` |
+| `spectral-splitter` | Spectral data splitting | `split_indices.csv`, `split_contract.json`, `split_summary.json` |
+| `spectral-preprocess` | Spectral data preprocessing | Preprocessed package, `preprocess_state.json`, `preprocess_contract.json` |
+| `spectral-feature` | Feature engineering, dimensionality reduction, and variable selection | Feature package, `feature_state.json`, `feature_contract.json` |
+| `spectral-modeling` | Classification/regression modeling, parameter selection, and final evaluation | Metrics, predictions, model files, modeling description files |
+| `spectral-optimizer` | Automated optimization of preprocessing-feature-modeling combinations | Candidate list, candidate result table, best pipeline, recommendation report |
+| `spectral-report` | Scientific figure and report generation | Figures, source data, captions, plotting code, inspection records |
+| `spectral-workflow` | Route planning, stage resume, and key confirmations | `workflow_plan.json`, `workflow_result.json` |
+
+### Run Directory Layout
+
+All files created in one analysis are collected under one run directory:
+
+```text
+spectral_runs/
+└── dataset_name/
+    └── run_name/
+        ├── reader_package/
+        ├── qc_output/
+        ├── split_output/
+        ├── preprocess_output/
+        ├── feature_output/
+        ├── model_output/
+        ├── optimizer_output/
+        ├── report_output/
+        ├── logs/
+        ├── workflow_plan.json
+        └── workflow_result.json
+```
+
+### Method Pools
+
+#### Spectral data reading
+
+| Category | Methods | Use cases | Public/self-developed |
+| --- | --- | --- | --- |
+| Text files and spreadsheets | CSV, TSV, TXT, Excel, ODS | Common instrument exports, commented headers, and multi-sheet files | Public |
+| Scientific containers | NPY, NPZ, MAT, HDF5, NetCDF | Matrix, variable, or dataset-path based data | Public |
+| Labels and metadata | External label alignment, target reading, metadata reading, band-axis reading | Labels, targets, sample metadata, and spectra stored separately | Self-developed |
+| One-file-per-sample folders | Folder import with labels from file names or folder names | Sample-wise spectral files organized in directories | Self-developed |
+| Layout recognition | Sample-row/sample-column recognition, multi-row headers, continuous numeric band block detection | Spectral columns mixed with sample IDs, labels, targets, or metadata | Self-developed |
+| Standard output | Standard spectral data package | Unified input for downstream checking, splitting, preprocessing, and modeling | Self-developed |
+
+#### Spectral data quality checking
+
+| Category | Methods | Use cases | Public/self-developed |
+| --- | --- | --- | --- |
+| Basic integrity | Package consistency, row/column consistency, missing values, illegal values, class counts, target risks, constant bands, low-variance bands | Check whether the standard package can enter downstream analysis | Self-developed |
+| Robust statistics | Robust Z-score, interquartile range, median absolute deviation | Statistical outlier candidates | Public |
+| Similarity checks | Similarity to mean, classwise similarity | Global or within-class spectral shape deviation | Self-developed |
+| Spectral-shape risks | Spike detection, baseline drift score | Local jumps, instrument spikes, and slow background drift | Self-developed |
+| Principal-component outliers | Hotelling T², Q residual, Mahalanobis distance on principal components | Multivariate outlier candidates | Public |
+| Duplicate risks | Exact duplicates, near-duplicate check | Duplicate samples, label conflicts, and possible split issues | Self-developed |
+| Stability outliers | Multi-method consensus, half-resampling outlier analysis, Monte Carlo cross-validation outlier analysis | Advanced unstable-sample analysis, not automatic sample deletion | Self-developed |
+| Confirmed cleaning | Sample or band deletion, mean/median imputation, linear/nearest interpolation, Hampel repair, local median absolute deviation repair | Executed only after user confirmation of actions, thresholds, and ranges | Public |
+
+#### Spectral data splitting
+
+| Category | Methods | Use cases | Public/self-developed |
+| --- | --- | --- | --- |
+| Holdout | Random holdout, stratified holdout | General train/validation/test split; class-ratio preservation | Public |
+| Predefined sets | Predefined split | Existing split column, external validation set, or assigned samples | Public |
+| Cross-validation | K-fold, stratified K-fold, leave-one-out | Standard evaluation, small-sample classification, very small datasets | Public |
+| Repeated evaluation | Monte Carlo cross-validation, repeated random split, stratified Monte Carlo cross-validation | Repeated random evaluation and class-ratio preservation | Public |
+| Representative split | Kennard-Stone, SPXY, Duplex | Cover spectral space, consider continuous targets, or build representative train/test sets | Public |
+| Continuous-target stratification | Regression-binned stratified split, y-binned stratified split | Bin continuous target values and preserve target distribution | Self-developed |
+| Group isolation | Group split, group-aware split, stratified group split | Batch, subject, or repeated-measure samples must not cross sets | Public |
+
+#### Spectral data preprocessing
+
+| Category | Methods | Use cases | Public/self-developed |
+| --- | --- | --- | --- |
+| Scatter and trend correction | None, SNV, MSC, detrending, SNV plus detrending | Scatter differences, baseline trends, and explicit baseline comparison | Public |
+| Smoothing and derivatives | Savitzky-Golay smoothing, first derivative, second derivative, moving average, Gaussian smoothing, median filter | Denoising, peak enhancement, and local artifact suppression | Public |
+| Baseline correction | Linear baseline, polynomial baseline, rubberband baseline, asymmetric least squares baseline | Slow background and fluorescence baseline correction | Public |
+| Scaling and normalization | Mean centering, standardization, min-max scaling, robust scaling, Pareto scaling, L2 normalization, area normalization, max-absolute normalization | Scale, intensity, or area normalization | Public |
+| Physical conversion and band handling | Reflectance-to-absorbance, transmittance-to-absorbance, log transform, band range selection, band range removal | Absorbance conversion and physical band trimming | Public |
+
+#### Feature engineering
+
+| Category | Methods | Use cases | Public/self-developed |
+| --- | --- | --- | --- |
+| Basic reduction and interpretation | None, PCA, PLS latent variables, VIP | Dimensionality reduction, latent-variable representation, and variable interpretation | Public |
+| Statistical filtering | SelectKBest, ANOVA F-test, F-regression, variance threshold | Classification/regression univariate filtering and low-variance removal | Public |
+| Projection-based band selection | SPA, CARS | Reduce collinearity and select key band combinations | Public |
+| Uninformative variable removal | UVE, MCUVE | Remove unstable or uninformative variables | Public |
+| Interval method | Interval PLS | Compare local information across continuous spectral intervals | Public |
+| Correlation filtering | Correlation filter | Select variables by correlation with class labels or target values | Public |
+| Physical selection | Band range selection, band index selection | Use prior knowledge or reproduce fixed experimental bands | Public |
+| Nonlinear and sparse projection | Kernel PCA, sparse PCA | Nonlinear projection and sparse loading patterns | Public |
+| Matrix and supervised projection | NMF, ICA, LDA projection | Nonnegative representation, independent components, and supervised reduction | Public |
+| Signal transforms | DCT, FFT | Frequency-domain or compressed-domain sample features | Public |
+| Sparse representation | Dictionary learning | Sparse dictionary representation and local spectral patterns | Public |
+| High-dimensional visualization | Isomap, LLE, t-SNE, UMAP | Nonlinear structure exploration; two-dimensional maps are exploratory | Public |
+| Basic deep representations | Autoencoder, denoising autoencoder, 1D CNN, ResNet1D spectral embedding | Nonlinear, denoising, convolutional, and residual representations | Public |
+| Project deep extensions | CLS-former, masked spectral autoencoder, contrastive spectral embedding | Small-sample spectral representations with confirmed training scale and overfitting risk | Self-developed |
+
+#### Classification models
+
+| Category | Methods | Use cases | Public/self-developed |
+| --- | --- | --- | --- |
+| Linear and discriminant models | Logistic regression, linear SVM, LDA, QDA | Fast baselines, low-sample settings, and interpretable classification | Public |
+| Kernel and neighborhood models | RBF-SVM, KNN classifier | Nonlinear boundaries and neighborhood classification | Public |
+| Probabilistic and chemometric models | Gaussian Naive Bayes, PLS-DA, SIMCA | Probabilistic baseline, PLS discrimination, and class modeling | Public |
+| Tree ensembles | Random Forest, Extra Trees, Gradient Boosting classifier | Nonlinear variable interactions and robust baselines | Public |
+| Optional boosting models | XGBoost, LightGBM, CatBoost classifier | Strong baselines when optional dependencies are installed | Public |
+| Neural network | MLP classifier | Small nonlinear model comparison | Public |
+| Project small-sample extensions | Spectral DKL-GP classifier, prototype spectral classifier, CLS-former classifier, CLS-former embedding plus SVM | Probabilistic, prototypical, and lightweight Transformer spectral classification | Self-developed |
+
+#### Regression models
+
+| Category | Methods | Use cases | Public/self-developed |
+| --- | --- | --- | --- |
+| Chemometric models | PLS regression, principal component regression | Main baselines for high-dimensional collinear spectra | Public |
+| Linear and regularized models | Linear regression, Ridge, Lasso, Elastic Net, Bayesian Ridge | Fast interpretable, sparse, or stable regression | Public |
+| Kernel, neighborhood, and probabilistic models | SVR, KNN regressor, Gaussian Process Regression | Nonlinear, neighborhood, and uncertainty-aware regression | Public |
+| Tree ensembles | Random Forest regressor, Extra Trees regressor, Gradient Boosting regressor | Nonlinear relationships and variable interactions | Public |
+| Optional boosting models | XGBoost, LightGBM, CatBoost regressor | Strong baselines when optional dependencies are installed | Public |
+| Project small-sample extensions | Spectral DKL-GP regressor, prototype spectral regressor, CLS-former regressor | Probabilistic, prototypical, and Transformer extensions for small-sample spectra | Self-developed |
+| Evaluation outputs | R², MAE, RMSE, MAPE, uncertainty summary | Regression performance, prediction export, and uncertainty reporting | Public |
+
+#### Automated optimization
+
+| Category | Methods | Use cases | Public/self-developed |
+| --- | --- | --- | --- |
+| Candidate recommendation | Recommend from data profile | Recommend routes from sample count, feature count, task type, and class balance without running models | Self-developed |
+| Single-method tuning | Tune one method with fixed upstream and downstream stages | Compare parameter values for one method | Self-developed |
+| Single-stage comparison | Compare one stage with fixed upstream and downstream stages | Compare preprocessing, feature, or modeling methods in one stage | Self-developed |
+| Multi-stage optimization | Joint search over preprocessing, feature engineering, and modeling combinations | Select the best pipeline under confirmed candidate range and run scale | Self-developed |
+| Model-parameter tuning only | Fix preprocessing and features, tune classifiers or regressors | Build quick model baselines | Self-developed |
+| Traditional feature plus model tuning | Compare PCA, PLS latent variables, VIP, SelectKBest, SPA, and downstream models | Traditional spectral modeling combination search | Self-developed |
+| Deep spectral representation plus model tuning | Compare embedding dimensions, training parameters, and downstream models | Requires explicit confirmation of training scale and compute cost | Self-developed |
+
+### Reporting Examples
+
+The following images are taken from the final presentation materials and demonstrate the outputs generated by the project workflow and reporting stage.
+
+#### Run directory structure
+
+![Run directory structure](docs/images/workflow-output-structure.png)
+
+#### Classifier accuracy comparison
+
+![Classifier accuracy comparison](docs/images/classifier-accuracy-comparison.png)
+
+#### Repeated training boxplot
+
+![Repeated training boxplot](docs/images/classifier-repeated-boxplot.png)
+
+#### Two-dimensional embedding visualization
+
+![Two-dimensional embedding visualization](docs/images/embedding-2d-visualization.png)
+
+### Installation
+
+```powershell
+python "$HOME\.codex\skills\.system\skill-installer\scripts\install-skill-from-github.py" --repo XY041216/spectral-skills --path plugins/spectral-skills
+```
+
+Or clone the repository and run the plugin check:
+
+```powershell
+git clone https://github.com/XY041216/spectral-skills.git
+cd spectral-skills
+python install\check_codex_plugin.py --json
+```
+
+### Example Request
+
+```text
+Process this spectral dataset: "E:\data\Tablet_ext_0-3.csv"
+```
+
+After reading the file, the workflow presents route options such as recommended baseline, quality checking only, step-by-step manual selection, automated optimization of preprocessing-feature-modeling combinations, deep model experiments, and visualization exploration. The user confirms the route before execution continues.
