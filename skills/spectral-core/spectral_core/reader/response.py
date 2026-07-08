@@ -53,4 +53,3 @@ def error_response(
         "warnings": warnings or [],
         "errors": [{"code": code, "message": message_text, "severity": "error", "details": details or {}}],
     }
-

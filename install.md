@@ -8,7 +8,7 @@ This project has three release-facing shapes:
   `.claude-plugin/` exposes the same bundle to Claude-compatible agents.
 
 Users should install the plugin image, not a single skill folder. The
-`spectral-workflow` skill depends on `spectral-reader`, `spectral-qc`,
+`spectral-workflow` skill depends on `spectral-reader`, `spectral-check`,
 `spectral-splitter`, `spectral-preprocess`, `spectral-feature`,
 `spectral-modeling`, `spectral-optimizer`, `spectral-report`, and
 `spectral_core`.
@@ -36,7 +36,7 @@ plugins/spectral-skills/
   .mcp.json
   skills/
     spectral-reader/
-    spectral-qc/
+    spectral-check/
     spectral-splitter/
     spectral-preprocess/
     spectral-feature/
@@ -200,7 +200,7 @@ $spectral-skills:spectral-workflow
 Example user request:
 
 ```text
-Use $spectral-skills:spectral-workflow to read Tablet_ext_0-3.csv, run QC,
+Use $spectral-skills:spectral-workflow to read Tablet_ext_0-3.csv, run quality checks,
 split 6:2:2, apply SNV preprocessing, use no feature reduction, and train a
 random_forest_classifier.
 ```

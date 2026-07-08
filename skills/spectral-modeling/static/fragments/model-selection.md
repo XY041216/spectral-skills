@@ -3,6 +3,20 @@
 When the model is unspecified, show a recommendation first and then the full
 grouped bilingual menu. Every entry must use
 `中文名称（method_code / English name）：用途、依赖或风险说明`.
+If the recommendation is regular/traditional, state that it is a default budget
+choice and ask whether to include built-in self-developed small-sample/deep
+models in the same comparison.
+
+Model recommendations must be data-aware, not fixed. Compute and show
+`small_sample`, `high_dimensional`, `very_high_dimensional`, class balance, and
+check status when available. For small-sample high-dimensional classification
+(`n_samples<200` or `n_train<100`, and `p/n_train>=10`), recommend
+regularized/linear and chemometric baselines first: Linear SVM, Logistic
+Regression, shrinkage LDA, RBF-SVM, and PLS-DA. Then explicitly offer
+self-developed/deep additions: CLS-former classifier, prototype spectral
+classifier, DKL-GP, and CLS-former embedding + SVM. For `n=120, p=3401`, say the
+profile qualifies and that CLS-former is a reasonable optional representative
+self-developed route, but not a replacement for the regular baseline.
 
 ## Supported classification models
 
@@ -55,7 +69,14 @@ Recommended `regular-fast` contains Logistic Regression, Linear SVM, RBF-SVM,
 LDA, KNN, Random Forest, and Extra Trees. State explicitly that it excludes QDA,
 Gaussian NB, PLS-DA, SIMCA, Gradient Boosting, MLP, optional boosting, and
 experimental/deep models. Offer `regular-full`, optional boosting, experimental
-models, or a custom list.
+models, or a custom list. The offer must name the self-developed/deep options
+instead of saying only "experimental models": DKL-GP
+(`spectral_dkl_gp_classifier/regressor`), prototype spectral models
+(`proto_spectral_classifier/regressor`), CLS-former
+(`cls_former_classifier/regressor`), CLS-former embedding + SVM
+(`cls_former_embedding_svm`), and feature-stage deep embeddings such as
+CNN1D/ResNet1D/Transformer/autoencoder embeddings paired with a confirmed
+classifier or regressor.
 
 ## Classifier tuning
 
@@ -129,4 +150,9 @@ Show regression methods with the same bilingual structure: `plsr`, `pcr`,
 `linear_regression`, `ridge`, `lasso`, `elastic_net`, `bayesian_ridge`, `svr`,
 `knn_regressor`, `random_forest_regressor`, `extra_trees_regressor`,
 `gradient_boosting_regressor`, `gpr`, optional XGBoost/LightGBM/CatBoost, and
-experimental DKL-GP/prototype/CLS-former regressors.
+experimental DKL-GP/prototype/CLS-former regressors. When the user asks for
+"regular regression models" or leaves the model unspecified, recommend a
+regular set first but ask whether to include
+`spectral_dkl_gp_regressor`, `proto_spectral_regressor`, and
+`cls_former_regressor` in the comparison with confirmed training budget,
+device, early stopping, and validation protocol.

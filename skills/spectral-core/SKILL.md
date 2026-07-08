@@ -1,6 +1,6 @@
 ---
 name: spectral-core
-description: Shared runtime dependency for the Spectral Skills GitHub skill-installer layout. Install alongside spectral-reader, spectral-qc, spectral-splitter, spectral-preprocess, spectral-feature, spectral-modeling, spectral-optimizer, spectral-report, and spectral-workflow when using direct GitHub skill installation. Do not use as a user-facing analysis skill; use the stage skills or spectral-workflow instead.
+description: Shared runtime dependency for the Spectral Skills GitHub skill-installer layout. Install alongside spectral-reader, spectral-check, spectral-splitter, spectral-preprocess, spectral-feature, spectral-modeling, spectral-optimizer, spectral-report, and spectral-workflow when using direct GitHub skill installation. Do not use as a user-facing analysis skill; use the stage skills or spectral-workflow instead.
 ---
 
 # Spectral Core Runtime
@@ -13,7 +13,7 @@ Use `spectral-workflow` for end-to-end spectral analysis, or use the stage
 skills directly:
 
 - `spectral-reader`
-- `spectral-qc`
+- `spectral-check`
 - `spectral-splitter`
 - `spectral-preprocess`
 - `spectral-feature`

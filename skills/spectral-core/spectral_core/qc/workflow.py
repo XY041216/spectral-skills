@@ -269,7 +269,7 @@ def _apply_mode(
     output_shape = {"n_samples": updated.n_samples, "n_features": updated.n_features}
     cleaning_action_name = action_summary.get("action") or cleaning_action or "confirmed_qc_cleaning"
     log = {
-        "stage": "spectral-qc-clean",
+        "stage": "spectral-check-clean",
         "mode": "clean",
         "status": "cleaned",
         "input_package": str(package.root),
@@ -341,7 +341,7 @@ def _normalize_detail_level(value: str | None) -> str:
 def _compact_qc_result(result: dict[str, Any]) -> dict[str, Any]:
     compact: dict[str, Any] = {
         "schema_version": result.get("schema_version"),
-        "stage": result.get("stage", "spectral-qc"),
+        "stage": result.get("stage", "spectral-check"),
         "mode": result.get("mode"),
         "status": result.get("status"),
         "input_package": result.get("input_package"),

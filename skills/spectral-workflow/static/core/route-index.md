@@ -5,8 +5,8 @@ Use this compact owner map before reading any child skill details.
 | Intent / input state | Owner skill | Required contract or artifact |
 | --- | --- | --- |
 | Raw spectral file or folder | `spectral-reader` | writes `data_contract.json` |
-| Existing standard package | `spectral-qc` or next requested stage | requires `data_contract.json` |
-| Data quality inspection or confirmed cleaning | `spectral-qc` | reads standard package; writes `qc_result.json` |
+| Existing standard package | `spectral-check` or next requested stage | requires `data_contract.json` |
+| Data quality inspection or confirmed cleaning | `spectral-check` | reads standard package; writes `qc_result.json` |
 | Train/validation/test assignment | `spectral-splitter` | reads standard package; writes `split_contract.json` |
 | Spectral preprocessing | `spectral-preprocess` | requires `split_contract.json`; writes `preprocess_contract.json` |
 | Feature extraction, variable selection, embeddings | `spectral-feature` | requires `split_contract.json`; writes `feature_contract.json` |

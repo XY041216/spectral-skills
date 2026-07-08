@@ -7,7 +7,7 @@ Each Spectral Skill owns one layer of the workflow.
 - `spectral-reader`: read files, standardize data references, infer layout,
   align labels, and produce a Spectral Data Contract. It does not perform QC,
   splitting, preprocessing, feature engineering, modeling, or optimization.
-- `spectral-qc`: inspect quality, detect risks, and recommend quality actions.
+- `spectral-check`: inspect quality, detect risks, and recommend quality actions.
   It does not mutate the modeling dataset unless a later skill applies changes.
 - `spectral-splitter`: create leakage-aware split indices and validation
   protocols. It does not preprocess or train models.

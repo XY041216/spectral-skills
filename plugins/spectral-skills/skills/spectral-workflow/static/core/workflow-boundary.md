@@ -10,7 +10,7 @@ report, optimizer, logging, or audit behavior.
 Prefer routing to the child skill that owns the next stage:
 
 - raw input -> `spectral-reader`
-- quality inspection or confirmed cleaning -> `spectral-qc`
+- quality inspection or confirmed cleaning -> `spectral-check`
 - train/validation/test assignment -> `spectral-splitter`
 - train-fitted preprocessing -> `spectral-preprocess`
 - train-fitted feature engineering -> `spectral-feature`

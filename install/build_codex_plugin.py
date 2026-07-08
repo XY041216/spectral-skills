@@ -19,7 +19,7 @@ from spectral_core.reader.response import error_response, ok_response
 PLUGIN_NAME = "spectral-skills"
 PLUGIN_VERSION = "0.1.0-beta.1"
 PLUGIN_DESCRIPTION = (
-    "Agent-oriented spectral data skills for leakage-safe spectral reading, QC, "
+    "Agent-oriented spectral data skills for leakage-safe spectral reading, quality checking, "
     "splitting, preprocessing, feature extraction, modeling, optimization, "
     "reporting, and workflow routing."
 )
@@ -40,7 +40,7 @@ PLUGIN_INTERFACE = {
     "shortDescription": "Leakage-safe spectral data processing workflows.",
     "longDescription": (
         "Spectral Skills packages nine coordinated Codex skills for spectral "
-        "data reading, QC, splitting, preprocessing, feature extraction, "
+        "data reading, quality checking, splitting, preprocessing, feature extraction, "
         "modeling, optimization, reporting, and workflow routing. The bundle "
         "keeps shared runtime code and schemas inside one plugin image so the "
         "skills install and update together."
@@ -82,7 +82,7 @@ def build_codex_plugin(*, clean: bool = False, verify: bool = False) -> dict[str
         _ensure_dirs()
         copied.append(_copy_tree(ROOT / "spectral_core", ROOT / "skills" / "spectral-core" / "spectral_core"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-reader", PLUGIN_DIR / "skills" / "spectral-reader"))
-        copied.append(_copy_tree(ROOT / "skills" / "spectral-qc", PLUGIN_DIR / "skills" / "spectral-qc"))
+        copied.append(_copy_tree(ROOT / "skills" / "spectral-check", PLUGIN_DIR / "skills" / "spectral-check"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-splitter", PLUGIN_DIR / "skills" / "spectral-splitter"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-preprocess", PLUGIN_DIR / "skills" / "spectral-preprocess"))
         copied.append(_copy_tree(ROOT / "skills" / "spectral-feature", PLUGIN_DIR / "skills" / "spectral-feature"))
@@ -258,7 +258,7 @@ def _write_plugin_files() -> list[str]:
 `spectral-skills` is a local agent plugin image for spectral data skills. It
 is packaged for Codex through `.codex-plugin/plugin.json` and for
 Claude-compatible agents through the repository-level `.claude-plugin/`
-metadata. This beta ships the `spectral-reader`, `spectral-qc`, `spectral-splitter`,
+metadata. This beta ships the `spectral-reader`, `spectral-check`, `spectral-splitter`,
 `spectral-preprocess`, `spectral-feature`, `spectral-modeling`,
 `spectral-optimizer`, `spectral-report`, and `spectral-workflow` skills.
 
@@ -268,7 +268,7 @@ metadata. This beta ships the `spectral-reader`, `spectral-qc`, `spectral-splitt
   single `read_spectral_dataset` entrypoint and write `X.csv`, optional
   `y.csv`, `sample_ids.csv`, `band_axis.csv`, optional `metadata.csv`, and
   `data_contract.json`.
-- `spectral-qc`: inspect and, after user confirmation, clean standard spectral
+- `spectral-check`: inspect and, after user confirmation, clean standard spectral
   packages before splitting, preprocessing, feature engineering, or modeling.
 - `spectral-splitter`: create reproducible random or classification-stratified
   train/validation/test assignments and write `split_indices.csv` plus
@@ -312,7 +312,7 @@ python skills/spectral-reader/scripts/server_health.py --json
 python skills/spectral-reader/scripts/check_consistency.py --json
 python scripts/reader/check_consistency.py --json
 python skills/spectral-reader/scripts/read_spectral_dataset.py --input path/to/data.csv --output-dir outputs/plugin_reader_basic --json
-python skills/spectral-qc/scripts/qc_spectral_package.py --mode methods --json
+python skills/spectral-check/scripts/qc_spectral_package.py --mode methods --json
 python skills/spectral-splitter/scripts/split_spectral_package.py --package-dir outputs/plugin_reader_basic --output-dir outputs/plugin_split_basic --method random --ratio 8:2 --json
 python skills/spectral-preprocess/scripts/preprocess_spectral_package.py --package-dir outputs/plugin_reader_basic --split-contract outputs/plugin_split_basic/split_contract.json --output-dir outputs/plugin_preprocess_basic --methods snv --json
 python skills/spectral-feature/scripts/feature_spectral_package.py --package-dir outputs/plugin_preprocess_basic --split-contract outputs/plugin_split_basic/split_contract.json --output-dir outputs/plugin_feature_basic --method variance_threshold --json
@@ -365,7 +365,7 @@ Restart Codex in a new thread after it reports success.
 
 ## Scope
 
-The plugin supports standard spectral reading and QC, holdout/CV/repeated and
+The plugin supports standard spectral reading and quality checking, holdout/CV/repeated and
 representative splitting, leakage-safe preprocessing, traditional and confirmed
 deep feature extraction, traditional/chemometric/optional boosting/experimental
 small-sample modeling, bounded pipeline optimization, publication figures, and
@@ -418,10 +418,10 @@ def _write_claude_plugin_files() -> list[Path]:
         "name": PLUGIN_NAME,
         "description": (
             "Claude-compatible and Codex-compatible spectral workflow bundles "
-            "for reading raw spectral files, QC, splitting, preprocessing, "
+            "for reading raw spectral files, quality checking, splitting, preprocessing, "
             "feature extraction, modeling, optimizer searches, publication "
             "figures, and end-to-end workflow routing. Skills include "
-            "spectral-reader, spectral-qc, spectral-splitter, "
+            "spectral-reader, spectral-check, spectral-splitter, "
             "spectral-preprocess, spectral-feature, spectral-modeling, "
             "spectral-optimizer, spectral-report, and spectral-workflow."
         ),

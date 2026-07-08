@@ -210,7 +210,7 @@ def _assert_shape(
 def _to_float(value: Any) -> float:
     text = str(value).strip()
     if text.lower() in MISSING_TOKENS:
-        raise PreprocessInputError("X_MISSING_VALUES", "X.csv contains missing values; handle them in spectral-qc before preprocessing.")
+        raise PreprocessInputError("X_MISSING_VALUES", "X.csv contains missing values; handle them in spectral-check before preprocessing.")
     try:
         number = float(text)
     except ValueError as exc:

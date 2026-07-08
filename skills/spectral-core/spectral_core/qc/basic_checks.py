@@ -69,7 +69,7 @@ def run_basic_checks(
     global_similarity_risk = _global_similarity_risk_summary(duplicate_source)
     result = {
         "schema_version": "0.1.0",
-        "stage": "spectral-qc",
+        "stage": "spectral-check",
         "mode": mode,
         "status": status,
         "input_package": str(package.root),

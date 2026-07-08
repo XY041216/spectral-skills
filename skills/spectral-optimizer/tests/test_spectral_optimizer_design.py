@@ -120,5 +120,63 @@ def test_optimizer_documents_four_budget_profiles_and_deep_opt_in() -> None:
         "[linear_svm, svm, lda]",
         "exceed 300",
         "never selected automatically",
+        "all-supported-preview",
+        "full supported-method universe",
+        "high-budget confirmation",
+        "全量支持方法选优",
+        "内置自创/深度候选是否加入选优组合",
+        "Do not ask only for `确认 regular 72`",
+        "needs_confirmation",
+        "Do not present these as a code-only list",
+        "self-developed small-sample models",
+        "CLS-former embedding + SVM",
+        "1-2 representative self-developed/deep candidates",
+        "small_sample",
+        "high_dimensional",
+        "cls_former_embedding_svm",
+        "contrastive_spectral_embedding + linear_svm/svm",
+    ]:
+        assert phrase in combined
+
+
+def test_automatic_combination_routes_to_pipeline_not_feature_compare() -> None:
+    mode = _read(OPTIMIZER_DIR / "static/fragments/mode-selection.md")
+    spaces = _read(OPTIMIZER_DIR / "static/fragments/search-spaces.md")
+    skill = _read(OPTIMIZER_DIR / "SKILL.md")
+    combined = mode + spaces + skill
+    for phrase in [
+        "自动选优组合",
+        "`optimize_pipeline` with the regular 72-trial pipeline preview",
+        "Do not downgrade this intent to fixed-SNV feature comparison",
+        "preprocess `none/snv/msc`",
+        "feature `none/pca10/pls_latent_variables[3,5,10]/vip30`",
+        "models `svm(C=[1,10], gamma=scale)`, `linear_svm(C=1)`, `pls_da(5)`",
+        "Expanded count is 72 validation trials",
+        "3 preprocess choices * 6 feature choices * 4 model choices",
+        "must not be used as the default answer to automatic combination requests",
+    ]:
+        assert phrase in combined
+
+
+def test_deep_addon_requires_candidate_selection_before_execution() -> None:
+    mode = _read(OPTIMIZER_DIR / "static/fragments/mode-selection.md")
+    spaces = _read(OPTIMIZER_DIR / "static/fragments/search-spaces.md")
+    skill = _read(OPTIMIZER_DIR / "SKILL.md")
+    combined = mode + spaces + skill
+    for phrase in [
+        "Second-stage candidate selection is mandatory",
+        "do not choose candidates for the user",
+        "do not execute trials",
+        "candidate-selection card",
+        "cls_former_embedding_svm",
+        "contrastive_spectral_embedding + linear_svm/svm",
+        "cls_former_classifier",
+        "proto_spectral_classifier",
+        "spectral_dkl_gp_classifier",
+        "全量运行所有支持方法（传统 + 自创/深度）",
+        "all-supported-run",
+        "Do not silently downgrade `all-supported-run` to regular 72",
+        "do not install them automatically",
+        "do not write deep config files",
     ]:
         assert phrase in combined

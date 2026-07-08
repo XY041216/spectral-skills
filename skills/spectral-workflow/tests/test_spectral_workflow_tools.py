@@ -76,7 +76,7 @@ def _fake_stage_runner(output_dir: Path, calls: list[tuple[str, list[str]]] | No
         if stage == "qc":
             qc_dir = Path(args[args.index("--output-dir") + 1])
             qc_dir.mkdir(parents=True, exist_ok=True)
-            (qc_dir / "qc_result.json").write_text(json.dumps({"stage": "spectral-qc", "status": "passed", "checks": []}), encoding="utf-8")
+            (qc_dir / "qc_result.json").write_text(json.dumps({"stage": "spectral-check", "status": "passed", "checks": []}), encoding="utf-8")
             return {"ok": True, "result": {"status": "passed", "checks": []}, "warnings": [], "errors": []}
         if stage == "splitter":
             split_dir = Path(args[args.index("--output-dir") + 1])
@@ -151,7 +151,7 @@ def _fake_stage_runner_with_cleaned_qc(output_dir: Path, calls: list[tuple[str, 
             (qc_dir / "qc_result.json").write_text(
                 json.dumps(
                     {
-                        "stage": "spectral-qc",
+                        "stage": "spectral-check",
                         "status": "cleaned",
                         "output_package": str(cleaned),
                         "next_package_for_downstream": str(cleaned),

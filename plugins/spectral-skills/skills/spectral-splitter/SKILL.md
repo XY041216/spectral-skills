@@ -2,7 +2,7 @@
 name: spectral-splitter
 description: >-
   Use when Codex needs to split an existing standard spectral data package from
-  spectral-reader or spectral-qc into reproducible train, validation, and test
+  spectral-reader or spectral-check into reproducible train, validation, and test
   assignments for downstream spectral-preprocess, spectral-feature, or
   spectral-modeling. This skill reads data_contract.json plus X.csv,
   sample_ids.csv, band_axis.csv, optional y.csv, and optional metadata.csv, and
@@ -20,7 +20,7 @@ description: >-
 `spectral-splitter` creates reproducible train/validation/test assignments for
 standard spectral packages.
 
-It sits after `spectral-reader` or `spectral-qc`, and before
+It sits after `spectral-reader` or `spectral-check`, and before
 `spectral-preprocess`, `spectral-feature`, and `spectral-modeling`.
 
 After QC `check` or `mark`, split the original standard package. After
@@ -68,26 +68,9 @@ Use the user's requested method when it is supported.
 - When asking the user to choose or confirm a split, show the recommended split
   first, then show the full supported split-method menu. Do not present only
   common options. Every user-facing entry must be bilingual and include the
-  executable method code, using `中文名称（method_code / English name）`.
+  executable method code, using `涓枃鍚嶇О锛坢ethod_code / English name锛塦.
 - Supported split-method menu:
-  - 随机留出（random / random holdout）
-  - 分层留出（stratified / stratified holdout）
-  - 预定义划分（predefined_split / predefined split）
-  - K 折交叉验证（kfold / K-fold cross-validation）
-  - 分层 K 折交叉验证（stratified_kfold / stratified K-fold cross-validation）
-  - 留一法（leave_one_out / leave-one-out cross-validation）
-  - 蒙特卡洛重复划分（monte_carlo_cv / Monte Carlo repeated holdout）
-  - 重复随机划分（repeated_random_split / repeated random split）
-  - 分层蒙特卡洛重复划分（stratified_monte_carlo_cv / stratified Monte Carlo repeated holdout）
-  - Kennard-Stone 代表性划分（kennard_stone / Kennard-Stone split）
-  - SPXY 代表性划分（spxy / SPXY split）
-  - Duplex 代表性划分（duplex / Duplex split）
-  - 回归分箱分层划分（regression_stratified / regression-binned stratified split）
-  - y 分箱分层划分（y_binned_stratified / y-binned stratified split）
-  - 分组划分（group / group split）
-  - 分组防泄漏划分（group_aware / group-aware split）
-  - 分层分组划分（stratified_group / stratified group split）
-- For classification default discussion, recommend `stratified` with `6:2:2`
+  - 闅忔満鐣欏嚭锛坮andom / random holdout锛?  - 鍒嗗眰鐣欏嚭锛坰tratified / stratified holdout锛?  - 棰勫畾涔夊垝鍒嗭紙predefined_split / predefined split锛?  - K 鎶樹氦鍙夐獙璇侊紙kfold / K-fold cross-validation锛?  - 鍒嗗眰 K 鎶樹氦鍙夐獙璇侊紙stratified_kfold / stratified K-fold cross-validation锛?  - 鐣欎竴娉曪紙leave_one_out / leave-one-out cross-validation锛?  - 钂欑壒鍗℃礇閲嶅鍒掑垎锛坢onte_carlo_cv / Monte Carlo repeated holdout锛?  - 閲嶅闅忔満鍒掑垎锛坮epeated_random_split / repeated random split锛?  - 鍒嗗眰钂欑壒鍗℃礇閲嶅鍒掑垎锛坰tratified_monte_carlo_cv / stratified Monte Carlo repeated holdout锛?  - Kennard-Stone 浠ｈ〃鎬у垝鍒嗭紙kennard_stone / Kennard-Stone split锛?  - SPXY 浠ｈ〃鎬у垝鍒嗭紙spxy / SPXY split锛?  - Duplex 浠ｈ〃鎬у垝鍒嗭紙duplex / Duplex split锛?  - 鍥炲綊鍒嗙鍒嗗眰鍒掑垎锛坮egression_stratified / regression-binned stratified split锛?  - y 鍒嗙鍒嗗眰鍒掑垎锛坹_binned_stratified / y-binned stratified split锛?  - 鍒嗙粍鍒掑垎锛坓roup / group split锛?  - 鍒嗙粍闃叉硠婕忓垝鍒嗭紙group_aware / group-aware split锛?  - 鍒嗗眰鍒嗙粍鍒掑垎锛坰tratified_group / stratified group split锛?- For classification default discussion, recommend `stratified` with `6:2:2`
   or `8:2` and `random_seed=42`.
 - For regression default discussion, recommend `kennard_stone` with `8:2`.
   Recommend `spxy` only when the user emphasizes y coverage or representative

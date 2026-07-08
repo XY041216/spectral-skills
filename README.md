@@ -20,7 +20,7 @@ Spectral Skills is a leakage-aware agent skill collection for end-to-end spectra
 原始光谱文件或文件夹
         |
         v
-spectral-reader  ->  spectral-qc  ->  spectral-splitter
+spectral-reader  ->  spectral-check  ->  spectral-splitter
                                             |
                                             v
 spectral-preprocess  ->  spectral-feature  ->  spectral-modeling
@@ -37,20 +37,20 @@ spectral-workflow：负责路由、确认、合同传递与测试集隔离
 典型分类链路：
 
 ```text
-读取标准包 -> 非破坏性 QC -> 分层划分 -> SNV -> PCA/VIP/全光谱 -> SVM/PLS-DA/模型比较 -> 最终测试 -> 论文图
+读取标准包 -> 非破坏性质量检查 -> 分层划分 -> SNV -> PCA/VIP/全光谱 -> SVM/PLS-DA/模型比较 -> 最终测试 -> 论文图
 ```
 
 典型回归链路：
 
 ```text
-读取标准包 -> QC -> Kennard-Stone/KFold -> MSC/SNV -> PLS-LV/SPA/CARS -> PLSR/SVR/集成回归 -> 最终测试 -> 回归图
+读取标准包 -> 质量检查 -> Kennard-Stone/KFold -> MSC/SNV -> PLS-LV/SPA/CARS -> PLSR/SVR/集成回归 -> 最终测试 -> 回归图
 ```
 
 ## 九个 Skill 的详细能力
 
 ### 1. `spectral-reader`：光谱数据读取与标准化
 
-将不同来源和布局的光谱数据转换为下游统一使用的标准数据包。它只负责“正确读入”，不做 QC、插补、删样本、预处理或建模。
+将不同来源和布局的光谱数据转换为下游统一使用的标准数据包。它只负责“正确读入”，不做质量检查、插补、删样本、预处理或建模。
 
 **支持的输入格式**
 
@@ -84,7 +84,7 @@ spectral-workflow：负责路由、确认、合同传递与测试集隔离
 
 遇到多个可解释的 sheet、变量、dataset、标签文件或样本方向时，skill 会要求最小必要确认，不会静默猜测。
 
-### 2. `spectral-qc`：光谱质量控制
+### 2. `spectral-check`：光谱质量检查
 
 读取标准数据包，先检查和标记问题；默认不删除样本或波段。只有用户确认动作、阈值和范围后，才进入 `clean` 模式。
 
@@ -372,7 +372,7 @@ optimizer 负责“规划候选、调用官方子 skill、比较验证/CV 结果
 
 ### 8. `spectral-report`：论文级图表与可复现报告
 
-从 reader、QC、splitter、preprocess、feature、modeling 或 optimizer 的现有产物生成图表；不重新训练模型，不编造重复实验、误差条、显著性或单位。
+从 reader、check、splitter、preprocess、feature、modeling 或 optimizer 的现有产物生成图表；不重新训练模型，不编造重复实验、误差条、显著性或单位。
 
 **支持的图表类型**
 
@@ -417,7 +417,7 @@ qa/*.md
 
 **支持的典型路线**
 
-- 只读取和 QC；
+- 只读取和质量检查；
 - 推荐分类/回归基线；
 - 手动逐阶段选择；
 - 预处理、特征或分类器单阶段比较；
@@ -434,7 +434,7 @@ qa/*.md
 | 阶段 | 主要输入 | 主要合同/输出 |
 | --- | --- | --- |
 | Reader | 原始文件/文件夹 | `data_contract.json` |
-| QC | 标准数据包 | `qc_result.json`，可选清理包 |
+| Check | 标准数据包 | `qc_result.json`，可选清理包 |
 | Splitter | 标准数据包 | `split_contract.json` |
 | Preprocess | 数据合同 + 划分合同 | `preprocess_contract.json` |
 | Feature | 数据/预处理合同 + 划分合同 | `feature_contract.json` |
@@ -502,7 +502,7 @@ Skills 是一个插件发布单元，不是一组可以独立安装的 skill 文
 
 ```text
 使用 $spectral-skills:spectral-workflow 处理 Tablet_ext_0-3.csv：
-读取、QC、分层 6:2:2 划分、SNV、feature=none，并比较 SVM 与 PLS-DA。
+读取、质量检查、分层 6:2:2 划分、SNV、feature=none，并比较 SVM 与 PLS-DA。
 ```
 
 ### Claude-compatible agents
@@ -559,7 +559,7 @@ python plugins/spectral-skills/skills/spectral-workflow/scripts/run_spectral_wor
 ```
 
 ```text
-对标准光谱包做非破坏性 QC，标记尖峰、基线漂移、重复光谱和 PCA T²/Q 异常候选，不删除样本。
+对标准光谱包做非破坏性质量检查，标记尖峰、基线漂移、重复光谱和 PCA T²/Q 异常候选，不删除样本。
 ```
 
 ```text

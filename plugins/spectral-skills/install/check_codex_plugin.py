@@ -45,8 +45,8 @@ def check_codex_plugin() -> dict[str, Any]:
     _require_dir(PLUGIN_DIR / "skills", checked, missing, "plugin_skills_dir")
     _require_file(PLUGIN_DIR / "skills" / "spectral-reader" / "SKILL.md", checked, missing, "spectral_reader_skill")
     _require_file(PLUGIN_DIR / "skills" / "spectral-reader" / "manifest.yaml", checked, missing, "spectral_reader_manifest")
-    _require_file(PLUGIN_DIR / "skills" / "spectral-qc" / "SKILL.md", checked, missing, "spectral_qc_skill")
-    _require_file(PLUGIN_DIR / "skills" / "spectral-qc" / "manifest.yaml", checked, missing, "spectral_qc_manifest")
+    _require_file(PLUGIN_DIR / "skills" / "spectral-check" / "SKILL.md", checked, missing, "spectral_check_skill")
+    _require_file(PLUGIN_DIR / "skills" / "spectral-check" / "manifest.yaml", checked, missing, "spectral_check_manifest")
     _require_file(PLUGIN_DIR / "skills" / "spectral-splitter" / "SKILL.md", checked, missing, "spectral_splitter_skill")
     _require_file(PLUGIN_DIR / "skills" / "spectral-splitter" / "manifest.yaml", checked, missing, "spectral_splitter_manifest")
     _require_file(PLUGIN_DIR / "skills" / "spectral-preprocess" / "SKILL.md", checked, missing, "spectral_preprocess_skill")
@@ -109,7 +109,7 @@ def check_codex_plugin() -> dict[str, Any]:
     _check_mcp_json(mcp_json, checked, mismatches)
     _check_root_mcp_json(root_mcp_json, checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-reader" / "manifest.yaml", checked, mismatches)
-    _check_yaml(PLUGIN_DIR / "skills" / "spectral-qc" / "manifest.yaml", checked, mismatches)
+    _check_yaml(PLUGIN_DIR / "skills" / "spectral-check" / "manifest.yaml", checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-splitter" / "manifest.yaml", checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-preprocess" / "manifest.yaml", checked, mismatches)
     _check_yaml(PLUGIN_DIR / "skills" / "spectral-feature" / "manifest.yaml", checked, mismatches)
@@ -126,7 +126,7 @@ def check_codex_plugin() -> dict[str, Any]:
     _run_codex_desktop_install_selftest(checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-reader/scripts/server_health.py", "--json"], "plugin_server_health", checked, mismatches, warnings)
     _run_plugin_script(["skills/spectral-reader/scripts/check_consistency.py", "--json"], "plugin_skill_consistency", checked, mismatches, warnings)
-    _run_plugin_script(["skills/spectral-qc/scripts/qc_spectral_package.py", "--mode", "methods", "--json"], "plugin_qc_methods", checked, mismatches, warnings)
+    _run_plugin_script(["skills/spectral-check/scripts/qc_spectral_package.py", "--mode", "methods", "--json"], "plugin_check_methods", checked, mismatches, warnings)
     _run_plugin_splitter_smoke(checked, mismatches, warnings)
     _run_plugin_preprocess_smoke(checked, mismatches, warnings)
     _run_plugin_feature_smoke(checked, mismatches, warnings)
@@ -432,7 +432,7 @@ def _check_source_mirrors(checked: list[dict[str, Any]], mismatches: list[dict[s
         (ROOT / "skills" / name, PLUGIN_DIR / "skills" / name, f"skill:{name}")
         for name in [
             "spectral-reader",
-            "spectral-qc",
+            "spectral-check",
             "spectral-splitter",
             "spectral-preprocess",
             "spectral-feature",

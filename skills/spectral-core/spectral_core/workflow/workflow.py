@@ -1209,7 +1209,7 @@ def _write_stage_log(log_dir: str | Path, stage: str, args: list[str], stdout: s
 def _stage_script(stage: str) -> Path:
     scripts = {
         "reader": SKILLS_DIR / "spectral-reader" / "scripts" / "read_spectral_dataset.py",
-        "qc": SKILLS_DIR / "spectral-qc" / "scripts" / "qc_spectral_package.py",
+        "qc": SKILLS_DIR / "spectral-check" / "scripts" / "qc_spectral_package.py",
         "splitter": SKILLS_DIR / "spectral-splitter" / "scripts" / "split_spectral_package.py",
         "preprocess": SKILLS_DIR / "spectral-preprocess" / "scripts" / "preprocess_spectral_package.py",
         "feature": SKILLS_DIR / "spectral-feature" / "scripts" / "feature_spectral_package.py",

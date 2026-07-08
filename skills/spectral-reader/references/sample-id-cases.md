@@ -18,4 +18,4 @@ labels, metadata, splitting, and QC.
 ## Repeated Spectra
 
 Identical or near-identical X rows are not a reader concern when sample IDs are
-valid. Leave repeated spectra for spectral-qc.
+valid. Leave repeated spectra for spectral-check.

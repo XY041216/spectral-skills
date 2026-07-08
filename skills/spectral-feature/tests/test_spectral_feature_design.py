@@ -85,3 +85,25 @@ def test_skill_requires_real_deep_confirmation_and_visualization_boundary() -> N
         "Visual separation is not",
     ]:
         assert phrase in skill
+
+
+def test_feature_menu_explains_all_supported_method_families() -> None:
+    menu = read("static/fragments/method-selection.md")
+    for phrase in [
+        "Explanation completeness for supported feature methods",
+        "purpose, when it fits the current profile, key parameters, and risk/limitation",
+        "CARS variable selection",
+        "UVE (`uve`",
+        "MCUVE (`mcuve`",
+        "Interval PLS",
+        "Correlation filter",
+        "ANOVA F",
+        "F-regression",
+        "Variance threshold",
+        "Band range selection",
+        "Kernel PCA",
+        "Deep train-fitted embeddings",
+        "cls_former_embedding_svm",
+        "small-sample high-dimensional",
+    ]:
+        assert phrase in menu

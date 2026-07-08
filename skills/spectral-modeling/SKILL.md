@@ -36,6 +36,14 @@ A set such as `regular-fast` must list included classifiers and all supported
 but excluded options. It is a budget recommendation, not the full capability
 surface.
 
+When recommending conventional classifiers/regressors, explicitly say that the
+recommendation excludes gated self-developed small-sample/deep models unless
+the user opts in. Ask whether to include any of these candidates:
+`spectral_dkl_gp_classifier/regressor`, `proto_spectral_classifier/regressor`,
+`cls_former_classifier/regressor`, `cls_former_embedding_svm`, or deep
+feature-stage embeddings such as CNN1D/ResNet1D/Transformer/autoencoder
+embeddings paired with a confirmed downstream model.
+
 Classification includes LR, Linear/RBF SVM, LDA/QDA, Gaussian NB, PLS-DA,
 SIMCA, ET, Gradient Boosting, RF, KNN, MLP, optional XGBoost/LightGBM/CatBoost,
 and gated DKL-GP/prototype/CLS-former models.
@@ -50,7 +58,8 @@ Offer:
 - fixed parameters (`--no-param-search`);
 - Level 1 bounded classifier-only tuning;
 - Level 2 traditional feature/pipeline tuning via `spectral-optimizer`;
-- Level 3 deep embedding/classifier tuning via explicitly confirmed optimizer deep search.
+- Level 3 self-developed small-sample/deep model or deep embedding/classifier
+  tuning via explicitly confirmed optimizer deep search.
 
 Use validation or train-only CV only. Classification selection defaults to
 Macro-F1; disclose the metric and grid. Never use final-test metrics for

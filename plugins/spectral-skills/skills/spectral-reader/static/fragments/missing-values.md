@@ -25,4 +25,4 @@ Use this fragment when spectral tables contain blank cells or missing markers.
 ## Handoff
 
 The reader preserves structure. Filling, deleting, retaining, or marking missing
-values belongs to spectral-qc.
+values belongs to spectral-check.

@@ -162,7 +162,7 @@ def _contract_warnings(apply_result: dict[str, Any]) -> list[dict[str, Any]]:
     if apply_result.get("missing_value_status") == "present":
         warnings.append({
             "code": "X_MISSING_VALUES_PRESENT",
-            "message": "X contains missing values; handle in spectral-qc.",
+            "message": "X contains missing values; handle in spectral-check.",
             "severity": "warning",
         })
     if apply_result.get("sample_id_status") == "partially_generated_after_confirmation":
@@ -174,7 +174,7 @@ def _contract_warnings(apply_result: dict[str, Any]) -> list[dict[str, Any]]:
     if apply_result.get("label_has_missing"):
         warnings.append({
             "code": "Y_MISSING_VALUES_PRESENT",
-            "message": "Labels or targets contain missing values; handle in spectral-qc.",
+            "message": "Labels or targets contain missing values; handle in spectral-check.",
             "severity": "warning",
         })
     if apply_result.get("metadata_has_missing"):

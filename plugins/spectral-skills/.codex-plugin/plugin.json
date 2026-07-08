@@ -1,7 +1,7 @@
 {
   "name": "spectral-skills",
   "version": "0.1.0-beta.1",
-  "description": "Agent-oriented spectral data skills for leakage-safe spectral reading, QC, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing.",
+  "description": "Agent-oriented spectral data skills for leakage-safe spectral reading, quality checking, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing.",
   "author": {
     "name": "Spectral Skills Contributors",
     "url": "https://github.com/XY041216/spectral-skills"
@@ -22,7 +22,7 @@
   "interface": {
     "displayName": "Spectral Skills",
     "shortDescription": "Leakage-safe spectral data processing workflows.",
-    "longDescription": "Spectral Skills packages nine coordinated Codex skills for spectral data reading, QC, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing. The bundle keeps shared runtime code and schemas inside one plugin image so the skills install and update together.",
+    "longDescription": "Spectral Skills packages nine coordinated Codex skills for spectral data reading, quality checking, splitting, preprocessing, feature extraction, modeling, optimization, reporting, and workflow routing. The bundle keeps shared runtime code and schemas inside one plugin image so the skills install and update together.",
     "developerName": "Spectral Skills Contributors",
     "category": "Productivity",
     "capabilities": [

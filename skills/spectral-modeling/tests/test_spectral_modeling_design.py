@@ -44,6 +44,12 @@ def test_deep_models_have_chinese_names_and_small_sample_notes() -> None:
         "embedding_dim=8/16",
         "早停",
         "not proof that tuning is broken",
+        "Model recommendations must be data-aware",
+        "small_sample",
+        "high_dimensional",
+        "very_high_dimensional",
+        "n=120, p=3401",
+        "CLS-former is a reasonable optional representative",
     ]:
         assert phrase in menu
 
