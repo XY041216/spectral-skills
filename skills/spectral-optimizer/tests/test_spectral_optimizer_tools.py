@@ -389,6 +389,82 @@ def test_pipeline_compact_preview_includes_pls_lv_and_linear_svm_requires_budget
     assert not (tmp_path / "optimizer").exists()
 
 
+def test_optimize_pipeline_model_addons_cross_all_preprocess_and_feature_trials() -> None:
+    response = optimize_spectral_pipeline(
+        mode="optimize_pipeline",
+        task_type="classification",
+        n_samples=120,
+        n_features=3401,
+        model_candidates="cls_former_classifier,proto_spectral_classifier,spectral_dkl_gp_classifier",
+        max_trials=126,
+        preview_only=True,
+    )
+
+    assert response["ok"] is True
+    result = response["result"]
+    assert result["trial_count"] == 126
+    trials = result["trials"]
+    for method in {"cls_former_classifier", "proto_spectral_classifier", "spectral_dkl_gp_classifier"}:
+        addon_trials = [trial for trial in trials if trial["model_method"] == method]
+        assert len(addon_trials) == 18
+        assert {trial["preprocess_method"] for trial in addon_trials} == {"none", "snv", "msc"}
+        assert {"none", "pca", "pls_latent_variables", "vip"} <= {trial["feature_method"] for trial in addon_trials}
+
+
+def test_optimize_pipeline_bcd_deep_model_addons_have_executable_locked_params() -> None:
+    response = optimize_spectral_pipeline(
+        mode="optimize_pipeline",
+        task_type="classification",
+        n_samples=120,
+        n_features=3401,
+        model_candidates="proto_spectral_classifier,spectral_dkl_gp_classifier,cls_former_embedding_svm",
+        max_trials=126,
+        preview_only=True,
+    )
+
+    assert response["ok"] is True
+    result = response["result"]
+    assert result["trial_count"] == 126
+    assert result["locked_parameter_check"]["status"] == "passed"
+    trials = result["trials"]
+    for method in {"proto_spectral_classifier", "spectral_dkl_gp_classifier", "cls_former_embedding_svm"}:
+        addon_trials = [trial for trial in trials if trial["model_method"] == method]
+        assert len(addon_trials) == 18
+        assert {trial["preprocess_method"] for trial in addon_trials} == {"none", "snv", "msc"}
+        assert {"none", "pca", "pls_latent_variables", "vip"} <= {trial["feature_method"] for trial in addon_trials}
+        assert all(trial["model_params"] for trial in addon_trials)
+
+    params = {trial["model_method"]: trial["model_params"] for trial in trials if trial["preprocess_method"] == "none" and trial["feature_method"] == "none"}
+    assert params["proto_spectral_classifier"]["embedding_dim"] == 16
+    assert params["proto_spectral_classifier"]["batch_size"] == 8
+    assert params["spectral_dkl_gp_classifier"]["embedding_dim"] == 16
+    assert params["spectral_dkl_gp_classifier"]["preprojection"] == "pca"
+    assert params["cls_former_embedding_svm"]["feature_dim"] == 16
+    assert params["cls_former_embedding_svm"]["svm_C"] == 1.0
+    assert params["cls_former_embedding_svm"]["svm_gamma"] == "scale"
+
+
+def test_optimize_pipeline_deep_feature_addon_crosses_preprocess_and_model_axes() -> None:
+    response = optimize_spectral_pipeline(
+        mode="optimize_pipeline",
+        task_type="classification",
+        n_samples=120,
+        n_features=3401,
+        feature_candidates="cls_former_embedding",
+        max_trials=84,
+        preview_only=True,
+    )
+
+    assert response["ok"] is True
+    result = response["result"]
+    assert result["trial_count"] == 84
+    cls_trials = [trial for trial in result["trials"] if trial["feature_method"] == "cls_former_embedding"]
+    assert len(cls_trials) == 12
+    assert {trial["preprocess_method"] for trial in cls_trials} == {"none", "snv", "msc"}
+    assert {trial["model_method"] for trial in cls_trials} == {"svm", "linear_svm", "pls_da"}
+    assert all(trial["feature_params"]["n_components"] == 16 for trial in cls_trials)
+
+
 def test_compare_step_execute_requires_parameter_grid_confirmation(tmp_path: Path) -> None:
     package_dir = _write_classification_package(tmp_path / "package")
     split_contract = _write_split(tmp_path / "split")

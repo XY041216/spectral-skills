@@ -60,6 +60,18 @@ Level 3 requires explicit extra budget confirmation for embedding dimensions,
 epochs, batch size, learning rate, device, seed, repeats, and the selection
 metric. No level may use final-test metrics for candidate selection.
 
+Level 3 add-ons are axes, not sidecar runs. In `optimize_pipeline`, confirmed
+deep embedding candidates are appended to the `feature` axis and crossed with
+the confirmed preprocess and modeling axes. Confirmed self-developed/deep model
+candidates are appended to the `modeling` axis and crossed with the confirmed
+preprocess and feature axes. Do not materialize a regular optimizer directory
+and a second experimental optimizer directory for one user-confirmed comparison.
+The comparison must have one candidate space, one trial manifest, one trial
+results table, and one best-pipeline selection. Example: regular classification
+`72` plus three model add-ons is `126` unified trials; one added
+`cls_former_embedding` feature candidate is `84` unified trials with the regular
+downstream model axis.
+
 ## Budget Profiles
 
 - `quick`: narrow traditional search for smoke/interactive use.

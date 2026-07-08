@@ -19,6 +19,7 @@ STAGE_DIRS = {
     "preprocess": "preprocess_output",
     "feature": "feature_output",
     "modeling": "model_output",
+    "optimizer": "optimizer_output",
     "report": "report_output",
     "logs": "logs",
 }

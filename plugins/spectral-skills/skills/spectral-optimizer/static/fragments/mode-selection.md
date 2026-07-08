@@ -119,6 +119,16 @@ If the user chooses B or C, show a second-stage candidate-selection card and
 wait. Do not select the 1-2 candidates yourself. Do not execute regular trials
 while the add-on choice is still unresolved.
 
+After the user confirms exact B/C methods, rebuild `optimize_pipeline` as one
+candidate space. A B feature add-on is appended to the `feature` axis and must
+cross with every confirmed preprocess and downstream model. A C model add-on is
+appended to the `modeling` axis and must cross with every confirmed preprocess
+and feature. Do not run regular trials first and then run the deep/self-developed
+add-ons as a separate output. For example, regular classification `72` plus
+three confirmed model add-ons is `3 * 6 * 7 = 126` unified trials, not `75`.
+One confirmed `cls_former_embedding` feature add-on is `3 * 7 * 4 = 84` unified
+trials unless the user also changes the downstream model axis.
+
 For B, list selectable deep/self-developed feature branches:
 `cls_former_embedding_svm`, `contrastive_spectral_embedding + linear_svm/svm`,
 `masked_spectral_autoencoder_embedding + linear_svm/svm`,

@@ -23,6 +23,9 @@ def test_workflow_boundary_and_contract_handoffs() -> None:
         "spectral-report",
         "workflow_plan.json",
         "workflow_result.json",
+        "All files created for one user-facing spectral analysis must converge under one",
+        "reader_package",
+        "optimizer_output",
         "locked atomic read-modify-write",
     ]:
         assert phrase in skill
@@ -54,6 +57,9 @@ def test_generic_route_card_is_profile_aware_and_uses_check_name() -> None:
         "class_imbalance",
         "cls_former_embedding_svm",
         "contrastive_spectral_embedding + linear_svm/svm",
+        "Generic route output layout is also mandatory",
+        "<stem>_standard_package",
+        "<stem>_optimizer_regular72",
     ]:
         assert phrase in combined
 

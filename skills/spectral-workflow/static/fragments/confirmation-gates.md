@@ -28,6 +28,17 @@ The optimization comparison route may recommend regular/traditional
 combinations first, but it must also list built-in self-developed
 small-sample/deep options and ask whether to include them.
 
+Generic route output layout is also mandatory. Create or reuse one run
+directory before writing anything. The reader package must be inside that run
+directory as `reader_package`; check output as `qc_output`; split output as
+`split_output`; preprocessing as `preprocess_output`; features as
+`feature_output`; modeling as `model_output`; optimizer as `optimizer_output`;
+reports as `report_output`; and logs as `logs`. Do not create sibling folders
+beside the raw file such as `<stem>_standard_package`, `<stem>_qc`,
+`<stem>_manual_workflow`, or `<stem>_optimizer_regular72` for one continuous
+analysis. Subsequent user choices must continue in the same run directory and
+the final answer should show relative stage paths under that directory.
+
 User-facing terminology rule: never write `QC` in route cards, status summaries,
 or next-step prompts. Use `check`, `spectral-check`, or `质量检查`. Internal
 legacy file names such as `qc_result.json` may appear only as paths or API

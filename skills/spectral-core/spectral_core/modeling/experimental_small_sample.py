@@ -1345,14 +1345,61 @@ class CLSFormerEmbeddingSVM(BaseEstimator, ClassifierMixin):
         self,
         svm_C: float = 1.0,
         svm_gamma: str = "scale",
-        **cls_former_params,
+        d_model: int = 64,
+        nhead: int = 4,
+        num_layers: int = 1,
+        dim_feedforward: int = 256,
+        dropout: float = 0.3,
+        feature_dim: int = 32,
+        epochs: int = 100,
+        batch_size: int = 8,
+        alpha: float = 0.5,
+        temperature: float = 0.1,
+        lr: float = 5e-4,
+        weight_decay: float = 5e-4,
+        patience: int = 20,
+        random_state: int = 42,
+        device: str = "auto",
     ):
         self.svm_C = svm_C
         self.svm_gamma = svm_gamma
-        self.cls_former_params = cls_former_params
+        self.d_model = d_model
+        self.nhead = nhead
+        self.num_layers = num_layers
+        self.dim_feedforward = dim_feedforward
+        self.dropout = dropout
+        self.feature_dim = feature_dim
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.alpha = alpha
+        self.temperature = temperature
+        self.lr = lr
+        self.weight_decay = weight_decay
+        self.patience = patience
+        self.random_state = random_state
+        self.device = device
+
+    def _cls_former_params(self) -> dict[str, Any]:
+        return {
+            "d_model": self.d_model,
+            "nhead": self.nhead,
+            "num_layers": self.num_layers,
+            "dim_feedforward": self.dim_feedforward,
+            "dropout": self.dropout,
+            "feature_dim": self.feature_dim,
+            "epochs": self.epochs,
+            "batch_size": self.batch_size,
+            "alpha": self.alpha,
+            "temperature": self.temperature,
+            "lr": self.lr,
+            "weight_decay": self.weight_decay,
+            "patience": self.patience,
+            "random_state": self.random_state,
+            "device": self.device,
+        }
 
     def fit(self, x, y, x_val=None, y_val=None):
-        self.encoder_model_ = CLSFormerClassifier(**self.cls_former_params)
+        self.encoder_model_ = CLSFormerClassifier(**self._cls_former_params())
         self.encoder_model_.fit(x, y, x_val=x_val, y_val=y_val)
 
         z_train = self.encoder_model_.transform(x)
@@ -1361,7 +1408,7 @@ class CLSFormerEmbeddingSVM(BaseEstimator, ClassifierMixin):
             gamma=self.svm_gamma,
             kernel="rbf",
             probability=True,
-            random_state=self.cls_former_params.get("random_state", 42),
+            random_state=self.random_state,
         )
         self.svm_.fit(z_train, y)
         self.classes_ = self.svm_.classes_
